@@ -25,38 +25,43 @@ class AbstractTree(ABC):
         pass
 
     @abstractmethod
-    def polynomial_recursion_relation(self,polys,l):
-        pass
-
-    @abstractmethod
     def _eff_hamiltonian_list(self):
         pass
 
     @staticmethod
-    def _tree_creator(n,r,_tree_edges,create_using=nx.Graph):
+    def _tree_creator(n,r,_tree_edges,create_using=nx.Graph,**kwargs):
         G = nx.empty_graph(n, create_using)
-        G.add_edges_from(_tree_edges(n, r))
+        G.add_edges_from(_tree_edges(n, r,**kwargs))
         return G
 
-    def exact_diagonalization(self, eigvals_only=False, noise=None):
+    def exact_diagonalization(self, eigvals_only=False, on_site_noise=None, bond_noise=None):
         """
-        Performs exact diagonalization on the adjacency matrix of the Tree.
+        Performs exact diagonalization on the adjacency matrix of the Tree. (Which is the Hamiltonian in a TB-model).
         Transforms Adjacency matrix to a dense expression, thereby limiting the max size that can be solved.
         If Noise is not None, adds on-site disorder by adding a diagonal to the Hamiltonian whose elements are drawn from
         a uniform distribution with min = 0 and max = 1 multiplied by noise. (thereby noise gives the maximal value for the noise).
 
-
-        :param noise: Default is None. Should be a order of magnitude, gives max size of noise applied to diagonal of Hamiltonian
+        :param on_site_noise: Default is None. Should be a order of magnitude, gives max size of noise applied to diagonal of Hamiltonian
+        :param bond_noise: Default is None. Gives max size of noise applied to the non-diagonal element of the Hamiltonian (hopping bonds)
         :param eigvals_only: Choose True if you only want the eigenvalues of the graph
         :return: w: array of N eigenvalues
         :return: v: array representing the N eigenvectors
         """
         # Note: We turn A into a dense matrix here -> limiting factor
         A = self.A.todense()
-        if noise:
+
+        if on_site_noise:
             random_generator = np.random.default_rng()
-            random_noise = random_generator.uniform(size=self.N)*noise
-            A += np.diag(random_noise)
+            random_noise = random_generator.uniform(-1,1,size=self.N)*on_site_noise
+            A = A + np.diag(random_noise)
+
+        if bond_noise: # Could be made more efficient by directly operating on the sparse matrix
+            random_generator = np.random.default_rng()
+            non_zero_indices = np.nonzero(A)
+            A = A.astype('float64')
+            for i in range(len(non_zero_indices[0])):
+                A[non_zero_indices[0][i]][non_zero_indices[1][i]] = A[non_zero_indices[0][i]][non_zero_indices[1][i]] + random_generator.uniform(-bond_noise,bond_noise)
+
 
         return sp.linalg.eigh(A,eigvals_only=eigvals_only) #Assumes symmetric matrix -> Might not be the case in the future
 
@@ -140,7 +145,7 @@ class AbstractTree(ABC):
         work_list = [chosen_node]
         while work_list:
             nnumber = work_list.pop(0)
-            subnodes = [n for n in self.G.neighbors(nnumber) if n > nnumber]
+            subnodes = [n for n in self.G.neighbors(nnumber) if n > nnumber + self.k]
             work_list.extend(subnodes)
             if subnodes:
                 node_list.append(subnodes)
@@ -232,7 +237,7 @@ class AbstractTree(ABC):
             radius = 0.0
         else:
             # else start at r=1
-            radius = radius_bump
+            radius = radius_bump*0.5
 
 
         sectors = np.linspace(0,2 * np.pi, self.k + 2,dtype=np.float32)
@@ -254,3 +259,16 @@ class AbstractTree(ABC):
             radius += radius_bump
 
         return npos
+
+    def nth_root_of_unity(n, k, precise=False):
+        """
+        Returns the k-root of the nth-root of unity
+        :param n: Determines the root degree of unity
+        :param k: Choose which root of the n roots you want
+        :param precise: If False, returns root rounded to 5th decimal, else to numeric precision
+        :return: complex number
+        """
+        if precise:
+            return np.exp((2 * k * np.pi * 1j) / n)
+        else:
+            return np.round(np.exp((2 * k * np.pi * 1j) / n), 5)
