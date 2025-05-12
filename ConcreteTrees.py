@@ -30,7 +30,7 @@ class CayleyTree(AbstractTree):
 
         if not save_ram:
             self.G = AbstractTree._tree_creator(self.N,self.k,CayleyTree._tree_edges) # networkx graph object
-            self.A = nx.adjacency_matrix(self.G) # Sparse Matrix
+            self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
     @staticmethod
     def _tree_edges(n, r):
@@ -56,6 +56,10 @@ class CayleyTree(AbstractTree):
             if first_time:
                 r = r - 1
             first_time = False
+
+    @property
+    def A(self):
+        return self._A.todense()
 
     def polynomial_solver(self):
         '''
@@ -221,7 +225,7 @@ class LiebCayley(AbstractTree):
         self.N = int(1 + ((k + 1)/(k-1))*(k**self.mc + k**self.ml -2)) # Number of Nodes
         if not save_ram:
             self.G = AbstractTree._tree_creator(self.N,self.k,LiebCayley._tree_edges) # networkx graph object
-            self.A = nx.adjacency_matrix(self.G,weight='weight') # Sparse Matrix
+            self._A = nx.adjacency_matrix(self.G,weight='weight') # Sparse Matrix
 
 
     @staticmethod
@@ -264,6 +268,10 @@ class LiebCayley(AbstractTree):
                     except StopIteration:
                         break
                 lieb_shell = []
+
+    @property
+    def A(self):
+        return self._A.todense()
 
 
     def shell_list(self):
@@ -347,7 +355,7 @@ class DoubleLiebCayley(AbstractTree):
         self.N = int(1 + ((k + 1)/(k-1))*(k**self.mc + k**self.ml1 + k**self.ml2 -3)) # Number of Nodes
         if not save_ram:
             self.G = AbstractTree._tree_creator(self.N,self.k,DoubleLiebCayley._tree_edges,J1=J1,J2=J2,J3=J3) # networkx graph object
-            self.A = nx.adjacency_matrix(self.G) # Sparse Matrix
+            self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
 
     @staticmethod
@@ -402,6 +410,9 @@ class DoubleLiebCayley(AbstractTree):
                         break
                 lieb_shell2 = []
 
+    @property
+    def A(self):
+        return self._A.todense()
 
     def shell_list(self):
         """Returns a list of lists nodes, with each list containing the nodes of the same shell
@@ -479,7 +490,7 @@ class HusimiCayley(AbstractTree):
 
         if not save_ram:
             self.G = AbstractTree._tree_creator(self.N,self.k,HusimiCayley._tree_edges,circle=circle) # networkx graph object
-            self.A = nx.adjacency_matrix(self.G) # Sparse Matrix
+            self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
 
     @staticmethod
@@ -535,8 +546,9 @@ class HusimiCayley(AbstractTree):
                 yield connection[0],connection[1]
             connector = []
 
-
-
+    @property
+    def A(self):
+        return self._A.todense()
 
     def shell_list(self):
         """Returns a list of lists nodes, with each list containing the nodes of the same shell
@@ -632,7 +644,7 @@ class LiebHusimi(AbstractTree):
         self.N = int(((k + 1)/(k-1))*(k**self.mc + k**self.ml -2)) # Number of Nodes
         if not save_ram:
             self.G = AbstractTree._tree_creator(self.N,self.k,LiebHusimi._tree_edges) # networkx graph object
-            self.A = nx.adjacency_matrix(self.G) # Sparse Matrix
+            self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
 
     @staticmethod
@@ -685,6 +697,9 @@ class LiebHusimi(AbstractTree):
                         yield connection[0], connection[1]
                 cayley_shell = []
 
+    @property
+    def A(self):
+        return self._A.todense()
 
     def shell_list(self):
         """Returns a list of lists nodes, with each list containing the nodes of the same shell

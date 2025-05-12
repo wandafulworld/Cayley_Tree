@@ -36,10 +36,12 @@ class AbstractTree(ABC):
 
     def exact_diagonalization(self, eigvals_only=False, on_site_noise=None, bond_noise=None):
         """
-        Performs exact diagonalization on the adjacency matrix of the Tree. (Which is the Hamiltonian in a TB-model).
-        Transforms Adjacency matrix to a dense expression, thereby limiting the max size that can be solved.
-        If Noise is not None, adds on-site disorder by adding a diagonal to the Hamiltonian whose elements are drawn from
+        Performs exact diagonalization on the adjacency matrix of the tree. (Which is the Hamiltonian in a TB-model).
+        Uses Adjacency matrix in a dense expression, thereby limiting the max size that can be solved.
+        If on_site_noise is not None, adds on-site disorder by adding a diagonal to the Hamiltonian whose elements are drawn from
         a uniform distribution with min = 0 and max = 1 multiplied by noise. (thereby noise gives the maximal value for the noise).
+        If bond_noise it not None, adds noise drawn from a uniform distribution with bounds given by +/- bond_noise to each off-diagonal element
+        in the adjacency matrix.
 
         :param on_site_noise: Default is None. Should be a order of magnitude, gives max size of noise applied to diagonal of Hamiltonian
         :param bond_noise: Default is None. Gives max size of noise applied to the non-diagonal element of the Hamiltonian (hopping bonds)
@@ -47,18 +49,17 @@ class AbstractTree(ABC):
         :return: w: array of N eigenvalues
         :return: v: array representing the N eigenvectors
         """
-        # Note: We turn A into a dense matrix here -> limiting factor
-        A = self.A.todense()
+        A = self.A # Local such that noise is not added permanently
 
         if on_site_noise:
             random_generator = np.random.default_rng()
             random_noise = random_generator.uniform(-1,1,size=self.N)*on_site_noise
             A = A + np.diag(random_noise)
 
-        if bond_noise: # Could be made more efficient by directly operating on the sparse matrix
+        if bond_noise: # ToDo: Make noise symmetric
             random_generator = np.random.default_rng()
             non_zero_indices = np.nonzero(A)
-            A = A.astype('float64')
+            A = A.astype('float64') #ToDo: Make compatible with complex A
             for i in range(len(non_zero_indices[0])):
                 A[non_zero_indices[0][i]][non_zero_indices[1][i]] = A[non_zero_indices[0][i]][non_zero_indices[1][i]] + random_generator.uniform(-bond_noise,bond_noise)
 
@@ -97,11 +98,7 @@ class AbstractTree(ABC):
         :return: None
         """
         nlist = self.shell_list()
-        # print(nlist)
-        # blist = tc.branch_list(self.G,self._r,self._M)
-        # print(blist)
         clist = self._color_list(nlist)
-
         # if color_shells:
         #     clist = tc.color_list(self._r, self._M, nlist)
 
