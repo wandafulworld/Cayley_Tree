@@ -5,9 +5,11 @@ import scipy as sp
 import networkx as nx
 import matplotlib.pyplot as plt
 import math
+import logging
 
 from PIL.ImImagePlugin import number
-
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Abstract Tree Class
 class AbstractTree(ABC):
@@ -19,6 +21,7 @@ class AbstractTree(ABC):
         self.N = None
         self.A = None
         self.save_ram = False
+        logger.info('Initiating Abstract Tree')
 
     @abstractmethod
     def shell_list(self) -> None:
@@ -34,7 +37,7 @@ class AbstractTree(ABC):
         G.add_edges_from(_tree_edges(n, r,**kwargs))
         return G
 
-    def exact_diagonalization(self, eigvals_only=False, on_site_noise=None, bond_noise=None):
+    def exact_diagonalization(self, eigvals_only=False, on_site_noise=None, bond_noise=None, random_seed = None):
         """
         Performs exact diagonalization on the adjacency matrix of the tree. (Which is the Hamiltonian in a TB-model).
         Uses Adjacency matrix in a dense expression, thereby limiting the max size that can be solved.
@@ -43,28 +46,43 @@ class AbstractTree(ABC):
         If bond_noise it not None, adds noise drawn from a uniform distribution with bounds given by +/- bond_noise to each off-diagonal element
         in the adjacency matrix.
 
-        :param on_site_noise: Default is None. Should be a order of magnitude, gives max size of noise applied to diagonal of Hamiltonian
-        :param bond_noise: Default is None. Gives max size of noise applied to the non-diagonal element of the Hamiltonian (hopping bonds)
-        :param eigvals_only: Choose True if you only want the eigenvalues of the graph
+        :param on_site_noise: float, Default is None. Should be a order of magnitude, gives max size of noise applied to diagonal of Hamiltonian
+        :param bond_noise: float, Default is None. Gives max size of noise applied to the non-diagonal element of the Hamiltonian (hopping bonds)
+        :param eigvals_only: boolean, Choose True if you only want the eigenvalues of the graph
+        :param random_seed: int, optional, Seed for reproducibility.
         :return: w: array of N eigenvalues
         :return: v: array representing the N eigenvectors
         """
         A = self.A # Local such that noise is not added permanently
-
+        n = A.shape[0]
         if on_site_noise:
-            random_generator = np.random.default_rng()
+            random_generator = np.random.default_rng(seed=random_seed)
             random_noise = random_generator.uniform(-1,1,size=self.N)*on_site_noise
             A = A + np.diag(random_noise)
 
-        if bond_noise: # ToDo: Make noise symmetric
-            random_generator = np.random.default_rng()
-            non_zero_indices = np.nonzero(A)
-            A = A.astype('float64') #ToDo: Make compatible with complex A
-            for i in range(len(non_zero_indices[0])):
-                A[non_zero_indices[0][i]][non_zero_indices[1][i]] = A[non_zero_indices[0][i]][non_zero_indices[1][i]] + random_generator.uniform(-bond_noise,bond_noise)
+        if bond_noise: #ToDo: Check compatibility with complex A
+            random_generator = np.random.default_rng(seed=random_seed)
+            # mask of upper-triangle positions where A is nonzero
+            upper_mask = (np.triu(A, k=1) != 0)
+            # draw noise only for those positions
+            noise_upper = np.zeros((n, n))
+            # uniform in [-bond_noise, +bond_noise] where mask is True
+            noise_vals = random_generator.uniform(-bond_noise, bond_noise, size=upper_mask.sum())
+            noise_upper[np.triu_indices(n, k=1)[0][upper_mask[np.triu_indices(n, k=1)]],
+                        np.triu_indices(n, k=1)[1][upper_mask[np.triu_indices(n, k=1)]]] = noise_vals
+            # symmetrize
+            noise = noise_upper + noise_upper.T
+            # add to A
+            A = A + noise
 
-
-        return sp.linalg.eigh(A,eigvals_only=eigvals_only) #Assumes symmetric matrix -> Might not be the case in the future
+        # Calculate Eigenvalues / Vectors
+        if A.shape[1] == n and np.allclose(A, A.T): # If A symmetric use eigh
+            return sp.linalg.eigh(A,eigvals_only=eigvals_only)
+        else:
+            if eigvals_only:
+                return sp.linalg.eigvals(A)
+            else:
+                return sp.linalg.eig(A)
 
     def effective_diagonalization(self):
         """

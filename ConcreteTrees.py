@@ -777,21 +777,21 @@ class LiebHusimi(AbstractTree):
 
 
 if __name__ == "__main__":
-    #C1 = CayleyTree(3,3)
+    C1 = LiebCayley(11,2)
     C2 = HusimiCayley(3,2,circle=False)
-    fig, ax_list = plt.subplots(1,1,sharex=True)
+    fig, ax_list = plt.subplots(2,1,sharex=True)
     fig.figsize = (15,15)
     print(C2.G.nodes)
     print(C2.G.edges)
 
-
-    # eval, evec = C2.exact_diagonalization()
-    # ax_list[0].hist(eval,bins=200)
-    # ax_list[0].set_ylabel('D')
-    # ax_list[0].set_xlabel('E/t')
-    # ax_list[0].set_title('Exact Diagonalization Spectrum')
+    print(C1.N)
+    eval, evec = C1.exact_diagonalization(bond_noise=0.2)
+    ax_list[0].hist(eval,bins=200)
+    ax_list[0].set_ylabel('D')
+    ax_list[0].set_xlabel('E/t')
+    ax_list[0].set_title('Exact Diagonalization Spectrum')
     # # #
-    C2.draw(ax_list)
+    #C2.draw(ax_list)
     # C2.draw(ax_list[0])
     # # #
     # eval2 = C2.effective_diagonalization()
