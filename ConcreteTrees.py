@@ -2,7 +2,7 @@ from abc import abstractmethod
 
 from scipy.stats import triang
 
-from AbstractTree import AbstractTree
+from AbstractTree import IsotropicAbstractTree
 import numpy as np
 import scipy as sp
 import networkx as nx
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 
-class CayleyTree(AbstractTree):
+class CayleyTree(IsotropicAbstractTree):
     def __init__(self,k,M,save_ram=False):
         """
         :param k: Number of children per node (k = r + 1)
@@ -29,7 +29,7 @@ class CayleyTree(AbstractTree):
         self.save_ram = save_ram
 
         if not save_ram:
-            self.G = AbstractTree._tree_creator(self.N,self.k,CayleyTree._tree_edges) # networkx graph object
+            self.G = IsotropicAbstractTree._tree_creator(self.N,self.k,CayleyTree._tree_edges) # networkx graph object
             self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
     @staticmethod
@@ -214,7 +214,7 @@ class CayleyTree(AbstractTree):
 
 
 
-class LiebCayley(AbstractTree):
+class LiebCayley(IsotropicAbstractTree):
     def __init__(self,M,k,save_ram=False):
         self.M = M
         self.mc = math.floor(M/2) # Number of Cayley Shells
@@ -224,7 +224,7 @@ class LiebCayley(AbstractTree):
         logger.info('Initiating LiebCayley Tree')
         self.N = int(1 + ((k + 1)/(k-1))*(k**self.mc + k**self.ml -2)) # Number of Nodes
         if not save_ram:
-            self.G = AbstractTree._tree_creator(self.N,self.k,LiebCayley._tree_edges) # networkx graph object
+            self.G = IsotropicAbstractTree._tree_creator(self.N,self.k,LiebCayley._tree_edges) # networkx graph object
             self._A = nx.adjacency_matrix(self.G,weight='weight') # Sparse Matrix
 
 
@@ -339,7 +339,7 @@ class LiebCayley(AbstractTree):
 
 
 
-class DoubleLiebCayley(AbstractTree):
+class DoubleLiebCayley(IsotropicAbstractTree):
     def __init__(self,M,k,J1=1,J2=1,J3=1,save_ram=False):
         self.M = M
         self.mc = math.floor(M/3) # Number of Cayley Shells
@@ -354,7 +354,7 @@ class DoubleLiebCayley(AbstractTree):
 
         self.N = int(1 + ((k + 1)/(k-1))*(k**self.mc + k**self.ml1 + k**self.ml2 -3)) # Number of Nodes
         if not save_ram:
-            self.G = AbstractTree._tree_creator(self.N,self.k,DoubleLiebCayley._tree_edges,J1=J1,J2=J2,J3=J3) # networkx graph object
+            self.G = IsotropicAbstractTree._tree_creator(self.N,self.k,DoubleLiebCayley._tree_edges,J1=J1,J2=J2,J3=J3) # networkx graph object
             self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
 
@@ -476,7 +476,7 @@ class DoubleLiebCayley(AbstractTree):
 
 
 
-class HusimiCayley(AbstractTree):
+class HusimiCayley(IsotropicAbstractTree):
     def __init__(self,M,k,save_ram=False,circle=False):
         self.M = M
         self.k = k # Connectivity (Degree of each node = k + 1)
@@ -489,7 +489,7 @@ class HusimiCayley(AbstractTree):
         self.circle = circle
 
         if not save_ram:
-            self.G = AbstractTree._tree_creator(self.N,self.k,HusimiCayley._tree_edges,circle=circle) # networkx graph object
+            self.G = IsotropicAbstractTree._tree_creator(self.N,self.k,HusimiCayley._tree_edges,circle=circle) # networkx graph object
             self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
 
@@ -633,7 +633,7 @@ class HusimiCayley(AbstractTree):
 
 
 
-class LiebHusimi(AbstractTree):
+class LiebHusimi(IsotropicAbstractTree):
     def __init__(self,M,k,save_ram=False):
         self.M = M
         self.mc = math.floor(M/2) # Number of Cayley Shells
@@ -643,7 +643,7 @@ class LiebHusimi(AbstractTree):
         logger.info('Initiating LiebHusimi Tree')
         self.N = int(((k + 1)/(k-1))*(k**self.mc + k**self.ml -2)) # Number of Nodes
         if not save_ram:
-            self.G = AbstractTree._tree_creator(self.N,self.k,LiebHusimi._tree_edges) # networkx graph object
+            self.G = IsotropicAbstractTree._tree_creator(self.N,self.k,LiebHusimi._tree_edges) # networkx graph object
             self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
 
@@ -794,11 +794,11 @@ if __name__ == "__main__":
     #C2.draw(ax_list)
     # C2.draw(ax_list[0])
     # # #
-    # eval2 = C2.effective_diagonalization()
-    # ax_list[1].hist(eval2,bins=200)
-    # ax_list[1].set_ylabel('D')
-    # ax_list[1].set_xlabel('E/t')
-    # ax_list[1].set_title('Effective Hamiltonian Diagonalization Spectrum')
+    eval2 = C1.effective_diagonalization()
+    ax_list[1].hist(eval2,bins=200)
+    ax_list[1].set_ylabel('D')
+    ax_list[1].set_xlabel('E/t')
+    ax_list[1].set_title('Effective Hamiltonian Diagonalization Spectrum')
 
     # eval, evec = C1.exact_diagonalization()
     # ax_list[1].hist(eval,bins=100)

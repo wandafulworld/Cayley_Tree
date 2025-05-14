@@ -27,16 +27,6 @@ class AbstractTree(ABC):
     def shell_list(self) -> None:
         pass
 
-    @abstractmethod
-    def _eff_hamiltonian_list(self):
-        pass
-
-    @staticmethod
-    def _tree_creator(n,r,_tree_edges,create_using=nx.Graph,**kwargs):
-        G = nx.empty_graph(n, create_using)
-        G.add_edges_from(_tree_edges(n, r,**kwargs))
-        return G
-
     def exact_diagonalization(self, eigvals_only=False, on_site_noise=None, bond_noise=None, random_seed = None):
         """
         Performs exact diagonalization on the adjacency matrix of the tree. (Which is the Hamiltonian in a TB-model).
@@ -83,44 +73,6 @@ class AbstractTree(ABC):
                 return sp.linalg.eigvals(A)
             else:
                 return sp.linalg.eig(A)
-
-    def effective_diagonalization(self):
-        """
-        Diagonalizes the effective Hamiltonians which define the dynamics of the symmetrized states on the tree.
-        Returns a list of eigenvalues and a list of weights assosciated with each of these eigenvalues.
-        :return: eigenval: The eigenvalues of you tree determined form the effective hamiltonians. Rounded to 10^{-5}
-        weights: the weight of each eigenvalue determined from the degeneracy of the associated hamiltonian
-        """
-        hs, degeneracies = self._eff_hamiltonian_list()
-        eigenval = []
-        weights = []
-        for i,h in enumerate(hs):
-            eval = sp.linalg.eigh(h,eigvals_only=True)
-            eval = np.round(eval,5)
-            # print(eval)
-            if not self.save_ram:
-                eigenval.extend(np.repeat(eval,degeneracies[i]).tolist())
-            else:
-                eigenval.extend(eval)
-                weights.extend(np.repeat(degeneracies[i], len(eval)).tolist())
-
-        if not self.save_ram:
-            return eigenval
-        else:
-            return eigenval, weights
-
-    def draw(self,ax):
-        """
-        :param ax: The axis on which you want to plot your cayley tree
-        :param color_shells: If True, instead of the branches, the shells will have the same color
-        :return: None
-        """
-        nlist = self.shell_list()
-        clist = self._color_list(nlist)
-        # if color_shells:
-        #     clist = tc.color_list(self._r, self._M, nlist)
-
-        nx.draw(self.G,pos=self.shell_layout(self.G,nlist=nlist),ax=ax,node_shape='.',node_color=clist,cmap='tab20')
 
 
     def _color_list(self,nlists):
@@ -191,6 +143,59 @@ class AbstractTree(ABC):
             vector = vector / np.sqrt(np.sum(np.square(vector)))
 
         return vector
+
+
+    def nth_root_of_unity(n, k, precise=False):
+        """
+        Returns the k-root of the nth-root of unity
+        :param n: Determines the root degree of unity
+        :param k: Choose which root of the n roots you want
+        :param precise: If False, returns root rounded to 5th decimal, else to numeric precision
+        :return: complex number
+        """
+        if precise:
+            return np.exp((2 * k * np.pi * 1j) / n)
+        else:
+            return np.round(np.exp((2 * k * np.pi * 1j) / n), 5)
+
+
+class IsotropicAbstractTree(AbstractTree):
+
+    @abstractmethod
+    def _eff_hamiltonian_list(self):
+        pass
+
+    @staticmethod
+    def _tree_creator(n,r,_tree_edges,create_using=nx.Graph,**kwargs):
+        G = nx.empty_graph(n, create_using)
+        G.add_edges_from(_tree_edges(n, r,**kwargs))
+        return G
+
+    def effective_diagonalization(self):
+        """
+        Diagonalizes the effective Hamiltonians which define the dynamics of the symmetrized states on the tree.
+        Returns a list of eigenvalues and a list of weights assosciated with each of these eigenvalues.
+        :return: eigenval: The eigenvalues of you tree determined form the effective hamiltonians. Rounded to 10^{-5}
+        weights: the weight of each eigenvalue determined from the degeneracy of the associated hamiltonian
+        """
+        hs, degeneracies = self._eff_hamiltonian_list()
+        eigenval = []
+        weights = []
+        for i,h in enumerate(hs):
+            eval = sp.linalg.eigh(h,eigvals_only=True)
+            eval = np.round(eval,5)
+            # print(eval)
+            if not self.save_ram:
+                eigenval.extend(np.repeat(eval,degeneracies[i]).tolist())
+            else:
+                eigenval.extend(eval)
+                weights.extend(np.repeat(degeneracies[i], len(eval)).tolist())
+
+        if not self.save_ram:
+            return eigenval
+        else:
+            return eigenval, weights
+
 
     def shell_layout(self,G, nlist=None, scale=1, center=None, dim=2):
         """Position nodes in concentric circles.
@@ -275,15 +280,17 @@ class AbstractTree(ABC):
 
         return npos
 
-    def nth_root_of_unity(n, k, precise=False):
+    def draw(self,ax):
         """
-        Returns the k-root of the nth-root of unity
-        :param n: Determines the root degree of unity
-        :param k: Choose which root of the n roots you want
-        :param precise: If False, returns root rounded to 5th decimal, else to numeric precision
-        :return: complex number
+        :param ax: The axis on which you want to plot your cayley tree
+        :param color_shells: If True, instead of the branches, the shells will have the same color
+        :return: None
         """
-        if precise:
-            return np.exp((2 * k * np.pi * 1j) / n)
-        else:
-            return np.round(np.exp((2 * k * np.pi * 1j) / n), 5)
+        nlist = self.shell_list()
+        clist = self._color_list(nlist)
+        # if color_shells:
+        #     clist = tc.color_list(self._r, self._M, nlist)
+
+        nx.draw(self.G,pos=self.shell_layout(self.G,nlist=nlist),ax=ax,node_shape='.',node_color=clist,cmap='tab20')
+
+
