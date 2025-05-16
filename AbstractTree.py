@@ -171,9 +171,9 @@ class IsotropicAbstractTree(AbstractTree):
         G.add_edges_from(_tree_edges(n, r,**kwargs))
         return G
 
-    def effective_diagonalization(self):
+    def mahan_diagonalization(self):
         """
-        Diagonalizes the effective Hamiltonians which define the dynamics of the symmetrized states on the tree.
+        Using Mahans approach, diagonalizes the effective Hamiltonians which define the dynamics of the symmetry sectors.
         Returns a list of eigenvalues and a list of weights assosciated with each of these eigenvalues.
         :return: eigenval: The eigenvalues of you tree determined form the effective hamiltonians. Rounded to 10^{-5}
         weights: the weight of each eigenvalue determined from the degeneracy of the associated hamiltonian
@@ -196,6 +196,9 @@ class IsotropicAbstractTree(AbstractTree):
         else:
             return eigenval, weights
 
+    def effective_diagonalization(self):
+        """ Backward Compatibility """
+        return self.mahan_diagonalization()
 
     def shell_layout(self,G, nlist=None, scale=1, center=None, dim=2):
         """Position nodes in concentric circles.
@@ -293,4 +296,16 @@ class IsotropicAbstractTree(AbstractTree):
 
         nx.draw(self.G,pos=self.shell_layout(self.G,nlist=nlist),ax=ax,node_shape='.',node_color=clist,cmap='tab20')
 
+
+class AnisotropicAbstractTree(AbstractTree):
+
+    def to_numpy_complex(self):
+        """Turns a Graph G into a np.complex128 adjacency matrix, drawing edge weights from graph data.
+         Allows for complex edge weights."""
+        N_size = len(self.G.nodes())
+        E = np.zeros(shape=(N_size, N_size), dtype=np.complex128)
+
+        for i, j, attr in self.G.edges(data=True):
+            E[i, j] = attr.get("weight")
+        return E
 
