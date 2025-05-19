@@ -1,4 +1,5 @@
 from abc import ABC,abstractmethod
+from logging import raiseExceptions
 
 import numpy as np
 import scipy as sp
@@ -144,62 +145,6 @@ class AbstractTree(ABC):
 
         return vector
 
-
-    def nth_root_of_unity(n, k, precise=False):
-        """
-        Returns the k-root of the nth-root of unity
-        :param n: Determines the root degree of unity
-        :param k: Choose which root of the n roots you want
-        :param precise: If False, returns root rounded to 5th decimal, else to numeric precision
-        :return: complex number
-        """
-        if precise:
-            return np.exp((2 * k * np.pi * 1j) / n)
-        else:
-            return np.round(np.exp((2 * k * np.pi * 1j) / n), 5)
-
-
-class IsotropicAbstractTree(AbstractTree):
-
-    @abstractmethod
-    def _eff_hamiltonian_list(self):
-        pass
-
-    @staticmethod
-    def _tree_creator(n,r,_tree_edges,create_using=nx.Graph,**kwargs):
-        G = nx.empty_graph(n, create_using)
-        G.add_edges_from(_tree_edges(n, r,**kwargs))
-        return G
-
-    def mahan_diagonalization(self):
-        """
-        Using Mahans approach, diagonalizes the effective Hamiltonians which define the dynamics of the symmetry sectors.
-        Returns a list of eigenvalues and a list of weights assosciated with each of these eigenvalues.
-        :return: eigenval: The eigenvalues of you tree determined form the effective hamiltonians. Rounded to 10^{-5}
-        weights: the weight of each eigenvalue determined from the degeneracy of the associated hamiltonian
-        """
-        hs, degeneracies = self._eff_hamiltonian_list()
-        eigenval = []
-        weights = []
-        for i,h in enumerate(hs):
-            eval = sp.linalg.eigh(h,eigvals_only=True)
-            eval = np.round(eval,5)
-            # print(eval)
-            if not self.save_ram:
-                eigenval.extend(np.repeat(eval,degeneracies[i]).tolist())
-            else:
-                eigenval.extend(eval)
-                weights.extend(np.repeat(degeneracies[i], len(eval)).tolist())
-
-        if not self.save_ram:
-            return eigenval
-        else:
-            return eigenval, weights
-
-    def effective_diagonalization(self):
-        """ Backward Compatibility """
-        return self.mahan_diagonalization()
-
     def shell_layout(self,G, nlist=None, scale=1, center=None, dim=2):
         """Position nodes in concentric circles.
 
@@ -283,17 +228,69 @@ class IsotropicAbstractTree(AbstractTree):
 
         return npos
 
+    def nth_root_of_unity(n, k, precise=False):
+        """
+        Returns the k-root of the nth-root of unity
+        :param n: Determines the root degree of unity
+        :param k: Choose which root of the n roots you want
+        :param precise: If False, returns root rounded to 5th decimal, else to numeric precision
+        :return: complex number
+        """
+        if precise:
+            return np.exp((2 * k * np.pi * 1j) / n)
+        else:
+            return np.round(np.exp((2 * k * np.pi * 1j) / n), 5)
+
+
+class IsotropicAbstractTree(AbstractTree):
+
+    @abstractmethod
+    def _eff_hamiltonian_list(self):
+        pass
+
+    @staticmethod
+    def _tree_creator(n,r,_tree_edges,create_using=nx.Graph,**kwargs):
+        G = nx.empty_graph(n, create_using)
+        G.add_edges_from(_tree_edges(n, r,**kwargs))
+        return G
+
+    def mahan_diagonalization(self):
+        """
+        Using Mahans approach, diagonalizes the effective Hamiltonians which define the dynamics of the symmetry sectors.
+        Returns a list of eigenvalues and a list of weights assosciated with each of these eigenvalues.
+        :return: eigenval: The eigenvalues of you tree determined form the effective hamiltonians. Rounded to 10^{-5}
+        weights: the weight of each eigenvalue determined from the degeneracy of the associated hamiltonian
+        """
+        hs, degeneracies = self._eff_hamiltonian_list()
+        eigenval = []
+        weights = []
+        for i,h in enumerate(hs):
+            eval = sp.linalg.eigh(h,eigvals_only=True)
+            eval = np.round(eval,5)
+            # print(eval)
+            if not self.save_ram:
+                eigenval.extend(np.repeat(eval,degeneracies[i]).tolist())
+            else:
+                eigenval.extend(eval)
+                weights.extend(np.repeat(degeneracies[i], len(eval)).tolist())
+
+        if not self.save_ram:
+            return eigenval
+        else:
+            return eigenval, weights
+
+    def effective_diagonalization(self):
+        """ Backward Compatibility """
+        return self.mahan_diagonalization()
+
+
     def draw(self,ax):
         """
         :param ax: The axis on which you want to plot your cayley tree
-        :param color_shells: If True, instead of the branches, the shells will have the same color
         :return: None
         """
         nlist = self.shell_list()
         clist = self._color_list(nlist)
-        # if color_shells:
-        #     clist = tc.color_list(self._r, self._M, nlist)
-
         nx.draw(self.G,pos=self.shell_layout(self.G,nlist=nlist),ax=ax,node_shape='.',node_color=clist,cmap='tab20')
 
 
@@ -309,3 +306,9 @@ class AnisotropicAbstractTree(AbstractTree):
             E[i, j] = attr.get("weight")
         return E
 
+    def mahan_diagonalization(self):
+        raise Exception("Anisotropic Trees can not be block-diagonalized using Mahans approach.")
+
+    @abstractmethod
+    def draw(self):
+        pass
