@@ -259,7 +259,7 @@ class IsotropicAbstractTree(AbstractTree):
         Using Mahans approach, diagonalizes the effective Hamiltonians which define the dynamics of the symmetry sectors.
         Returns a list of eigenvalues and a list of weights assosciated with each of these eigenvalues.
         :return: eigenval: The eigenvalues of you tree determined form the effective hamiltonians. Rounded to 10^{-5}
-        weights: the weight of each eigenvalue determined from the degeneracy of the associated hamiltonian
+        :return: weights: the weight of each eigenvalue determined from the degeneracy of the associated hamiltonian
         """
         hs, degeneracies = self._eff_hamiltonian_list()
         eigenval = []
@@ -280,7 +280,7 @@ class IsotropicAbstractTree(AbstractTree):
             return eigenval, weights
 
     def effective_diagonalization(self):
-        """ Backward Compatibility """
+        """ For backward compatibility """
         return self.mahan_diagonalization()
 
 

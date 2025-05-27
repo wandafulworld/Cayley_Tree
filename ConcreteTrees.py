@@ -1,7 +1,4 @@
 from abc import abstractmethod
-
-from scipy.stats import triang
-
 from AbstractTree import IsotropicAbstractTree
 import numpy as np
 import scipy as sp
@@ -114,9 +111,9 @@ class CayleyTree(IsotropicAbstractTree):
     def eff_hamiltonian_constructor(self,d,r):
         """
         Constructs a one-dimensional Hamiltonian with the off-diagonal elements being sqrt(r)
-        :param d: Dimenson of the H Matrix
-        :param r: number of childs per node
-        :return: h: matrix of a 1-D chain hamiltonian of dimension d
+        :param d: int, Dimension of the H Matrix
+        :param r: int, number of childs per node
+        :return: h: (d+1,d+1)-dim np-array, matrix of a 1-D chain hamiltonian of dimension d
         """
         h = np.eye(N=d, k=1) * np.sqrt(r) + np.eye(N=d, k=-1) * np.sqrt(r)
         return h

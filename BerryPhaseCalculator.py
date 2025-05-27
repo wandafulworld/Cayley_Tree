@@ -1,7 +1,6 @@
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
-import math
 
 def bulk_hamiltonian(k,J1=1,J2=1,J3=1):
     """
@@ -50,8 +49,8 @@ def spectrum_calculator(hamiltonian,num=1000,**kwargs):
 def band_mapping_calculator(hamiltonian,num=1000,**kwargs):
     """
     Simply returns all eigenvalues and the associated k-value
-    :param hamiltonian:
-    :param num:
+    :param hamiltonian: function, Bulk hamiltonian
+    :param num: int, number of steps between 0 and 2pi
     :param kwargs:
     :return:
     """
@@ -79,8 +78,6 @@ def specific_band_projector_calculator(hamiltonian,k,eval_min,eval_max,vector=Fa
 
     ix = np.argwhere((evalues>eval_min) & (evalues < eval_max)) # Double Check
     band_vector = evectors.T[ix][0][0]
-    # Normalize to 1?
-    # print('Length of Band vector: ',np.linalg.norm(band_vector))
 
     if vector:
         return band_vector
@@ -97,7 +94,6 @@ def berry_phase_calculator(hamiltonian,eval_min,eval_max,**kwargs):
     N = len(k_path)
     path_ordered_arrays = []
     for i,k in enumerate(k_path):
-        #print(k)
         if i == 0: # First state is just the vector
             path_ordered_arrays.append(specific_band_projector_calculator(hamiltonian,k,eval_min,eval_max,True,**kwargs))
         elif i == N-1: # Last state is just the vector (conjugated)
@@ -106,13 +102,9 @@ def berry_phase_calculator(hamiltonian,eval_min,eval_max,**kwargs):
             path_ordered_arrays.append(specific_band_projector_calculator(hamiltonian,k,eval_min,eval_max,False,**kwargs))
 
     propagating_vector = path_ordered_arrays[0]
-    # print('Propagting vector',propagating_vector)
-    # print('2nd element PO-array',path_ordered_arrays[1])
-    # print('-------------------------------------------------')
 
     for element in path_ordered_arrays[1:]:
         propagating_vector = np.matmul(element,propagating_vector)
-        #print(propagating_vector)
 
     #return np.angle(propagating_vector) # returns the berry phase
     return -1j/(2*np.pi)*np.log(propagating_vector) # returns the polarization
