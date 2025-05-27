@@ -1,5 +1,7 @@
 from abc import abstractmethod
 
+from PIL.ImageOps import scale
+
 from AbstractTree import AnisotropicAbstractTree
 import numpy as np
 import scipy as sp
@@ -139,19 +141,19 @@ class HaldaneCayleyTree(AnisotropicAbstractTree):
         """
 
         # Drawing the model
-        pos = self.shell_layout(H.G, H.shell_list())
-        nx.draw_networkx_nodes(H.G, pos, node_size=10, ax=ax)
+        pos = self.shell_layout(self.G, self.shell_list())
+        nx.draw_networkx_nodes(self.G, pos, node_size=10, ax=ax)
 
-        edge_undirected = [(u, v) for (u, v, d) in H.G.edges(data=True) if d["weight"] == 1]
+        edge_undirected = [(u, v) for (u, v, d) in self.G.edges(data=True) if d["weight"] == 1]
 
         # We only draw one direction of the complex edges
-        edge_directed = [(u, v) for (u, v, d) in H.G.edges(data=True) if d["weight"] == self.t2*1j]
+        edge_directed = [(u, v) for (u, v, d) in self.G.edges(data=True) if d["weight"] == self.t2*1j]
 
         # Turn off arrows because they are technically undirected
-        nx.draw_networkx_edges(H.G, pos, edgelist=edge_undirected, width=1, arrows=False, ax=ax)
+        nx.draw_networkx_edges(self.G, pos, edgelist=edge_undirected, width=1, arrows=False, ax=ax)
 
         nx.draw_networkx_edges(
-            H.G, pos, edgelist=edge_directed, width=1, alpha=0.5, edge_color="violet", style="dashed", ax=ax)
+            self.G, pos, edgelist=edge_directed, width=1, alpha=0.5, edge_color="violet", style="dashed", ax=ax)
 
 
 
@@ -226,9 +228,6 @@ class QWZCayleyTree(AnisotropicAbstractTree):
 
         Parameters
         ----------
-        G : NetworkX graph or list of nodes
-            A position will be assigned to every node in G.
-
         nlist : list of lists
            List of node lists for each shell.
 
@@ -249,8 +248,6 @@ class QWZCayleyTree(AnisotropicAbstractTree):
         ValueError
             If dim != 2
         """
-        k = 3  # number of children per node in qwz tree (x2)
-
         if dim != 2:
             raise ValueError("can only handle 2 dimensions")
 
@@ -262,7 +259,7 @@ class QWZCayleyTree(AnisotropicAbstractTree):
         if len(self.G) == 0:
             return {}
         if len(self.G) == 1:
-            return {nx.utils.arbitrary_element(G): center}
+            return {nx.utils.arbitrary_element(self.G): center}
 
         if nlist is None:
             # draw the whole graph in one shell
@@ -324,7 +321,30 @@ class QWZCayleyTree(AnisotropicAbstractTree):
         :param ax: matplotlib.pyplot.axis object, axis on which the graph should be drawn
         :return: None
         """
-        pass
+        # Drawing the model
+        pos = self.qwz_square_layout(self.shell_list())
+
+        #Draw Nodes
+        nx.draw_networkx_nodes(self.G, pos, node_size=5, ax=ax)
+
+        # Select undirected edges
+        edge_undirected = [(u, v) for (u, v, d) in self.G.edges(data=True) if d["weight"] == self.scale]
+        edge_undirected2 = [(u, v) for (u, v, d) in self.G.edges(data=True) if d["weight"] == -self.scale]
+
+        # Select directed edges (one direction only)
+        edge_directed = [(u, v) for (u, v, d) in self.G.edges(data=True) if d["weight"] == self.scale*1j]
+        edge_directed2 = [(u, v) for (u, v, d) in self.G.edges(data=True) if d["weight"] == -self.scale*1j]
+
+        # Turn off arrows because they are technically undirected
+        nx.draw_networkx_edges(self.G, pos, edgelist=edge_undirected, edge_color='blue', width=0.5, alpha=0.5, arrows=False,
+                               ax=ax)
+        nx.draw_networkx_edges(self.G, pos, edgelist=edge_undirected2, edge_color='green', alpha=0.5, width=0.5, arrows=False,
+                               ax=ax)
+        # Directed Edges
+        nx.draw_networkx_edges(
+            self.G, pos, edgelist=edge_directed, width=0.5, alpha=0.5, edge_color="orange", style="dashed", ax=ax)
+        nx.draw_networkx_edges(
+            self.G, pos, edgelist=edge_directed2, width=0.5, alpha=0.5, edge_color="red", style="dashed", ax=ax)
 
 
 
@@ -343,6 +363,6 @@ if __name__ == "__main__":
     ax_list[0].set_title('Exact Diagonalization Spectrum with M = ' + str(H.M) + ' and N = ' + str(H.N))
 
     # Drawing the model
-    H.draw(ax_list[1])
+    Q.draw(ax_list[1])
     plt.tight_layout()
     plt.show()
