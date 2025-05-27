@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import math
 import logging
 import itertools
+import QWZ_HelperFunctions as hf
 
 class HaldaneCayleyTree(AnisotropicAbstractTree):
     def __init__(self,M,t2=1,save_ram=False):
@@ -131,6 +132,11 @@ class HaldaneCayleyTree(AnisotropicAbstractTree):
         return shell_lists
 
     def draw(self,ax):
+        """
+        Draws the Graph on the axis provided
+        :param ax: matplotlib.pyplot.axis object, axis on which the graph should be drawn
+        :return: None
+        """
 
         # Drawing the model
         pos = self.shell_layout(H.G, H.shell_list())
@@ -148,8 +154,184 @@ class HaldaneCayleyTree(AnisotropicAbstractTree):
             H.G, pos, edgelist=edge_directed, width=1, alpha=0.5, edge_color="violet", style="dashed", ax=ax)
 
 
+
+class QWZCayleyTree(AnisotropicAbstractTree):
+    def __init__(self,M,t_sigma=1,scale=0.5,m=1,save_ram=False):
+        """
+        :param M: Number of shells of the QWZ-Cayley Tree, must be larger than 1 due to construction algorithm
+        :param t_sigma: Scaling of the off-diagonal hopping (mixing)
+        :param scale: Scaling of all hopping matrices (usually 0.5 for QWZ)
+        :param m: mass term
+        :param save_ram: If true, initializes tree with parameters only, no adjacency matrix / graph object
+        """
+        if M < 1:
+            raise ValueError("M has to be at least 1")
+        self.k = 3 # Degree = k + 1
+        self.M = M
+        self.N = int(2*(1 + (self.k+1)*(self.k**M -1)/(self.k-1))) # Number of nodes on the QWZ-cayley tree (== 2xN Cayley Tree)
+        self.save_ram = save_ram
+
+        self.t_sigma = t_sigma
+        self.scale = scale
+        self.m = m
+
+        if not save_ram:
+            self.G = nx.empty_graph(self.N, nx.DiGraph)
+            hf.qwz_inner_ring(self.G,[0,1],[2,3,4,5,6,7,8,9],t_sigma=self.t_sigma,scale=self.scale) # networkx graph object
+            if M > 1:
+                parents = [2, 3, 4, 5, 6, 7,8,9]
+                n = 10 # position of last added node
+                for shell_number in range(2,M+1):
+                    shell_size = 2*((self.k + 1) * (self.k ** (shell_number - 1)))
+                    nodes = list(range(n,n+shell_size))
+                    #print(nodes)
+
+                    while parents:
+                        local_parents = [parents.pop(0),parents.pop(0)]
+                        next_nodes = [nodes.pop(0),nodes.pop(0),nodes.pop(0),nodes.pop(0),nodes.pop(0),nodes.pop(0)]
+                        hf.qwz_connection_builder(self.G,local_parents,next_nodes,
+                                                  self.G._node[local_parents[0]]['location'],
+                                                  t_sigma=self.t_sigma,scale=self.scale)
+
+                    parents = list(range(n,n+shell_size))
+                    n += shell_size
+
+    @property
+    def A(self):
+        A = self.to_numpy_complex()
+        A = A + np.diag(np.tile([self.m, -self.m], int(self.N/2))) #Add On-Site Potential
+        return A
+
+    def shell_list(self):
+        """Returns a list of lists, with each list containing the nodes of the same shell
+            Makes use of the fact that the construction algorithm constructs each shell after the other
+
+            Returns
+            -------
+            shell_lists : Multiple lists corresponding to the number of Shells M
+                each list containing the nodes of that shell
+            """
+        nodes = list(self.G.nodes)
+        shell_lists = [[0,1]]  # already contains the 0th and 1st node in the center
+        l = 2  # position of last added node
+        for shell_number in range(1, self.M + 1):
+            n = 2*(self.k + 1) * (self.k ** (shell_number - 1))
+            shell_lists.append(nodes[l:(l + n)])
+            l += n
+
+        return shell_lists
+
+    def qwz_square_layout(self, nlist=None, center=None, dim=2):
+        """Position nodes on square around the parent node, depending on relative position.
+
+        Parameters
+        ----------
+        G : NetworkX graph or list of nodes
+            A position will be assigned to every node in G.
+
+        nlist : list of lists
+           List of node lists for each shell.
+
+        center : array-like or None
+            Coordinate pair around which to center the layout.
+
+        dim : int
+            Dimension of layout, currently only dim=2 is supported.
+            Other dimension values result in a ValueError.
+
+        Returns
+        -------
+        pos : dict
+            A dictionary of positions keyed by node
+
+        Raises
+        ------
+        ValueError
+            If dim != 2
+        """
+        k = 3  # number of children per node in qwz tree (x2)
+
+        if dim != 2:
+            raise ValueError("can only handle 2 dimensions")
+
+        if center is None:
+            center = np.zeros(dim)
+        else:
+            center = np.asarray(center)
+
+        if len(self.G) == 0:
+            return {}
+        if len(self.G) == 1:
+            return {nx.utils.arbitrary_element(G): center}
+
+        if nlist is None:
+            # draw the whole graph in one shell
+            nlist = [list(self.G)]
+
+        radius = 0.3
+
+        npos = {}
+        for nodes in nlist:
+            nodes_pos = np.zeros((len(nodes), 2))
+            if len(nodes) == 2:
+                pos = np.array([[0, -0.01], [0, 0.01]])
+                npos.update(zip(nodes, pos))
+
+            else:
+                for i, node in enumerate(nodes):
+                    parent = [n for n in self.G.neighbors(node) if n < node][0]
+                    parent_position = npos[parent] + np.array([-0.001, -0.001])
+                    node_location = self.G._node[node]['location']
+                    if node_location == 'south':
+                        node_pos = parent_position + np.array([-radius, 0])
+                        if i % 2 == 1:
+                            nodes_pos[i] = node_pos + np.array([-0.001, -0.001])
+                        else:
+                            nodes_pos[i] = node_pos + np.array([0.001, 0.001])
+
+                    elif node_location == 'east':
+                        node_pos = parent_position + np.array([0, radius])
+                        if i % 2 == 1:
+                            nodes_pos[i] = node_pos + np.array([-0.001, -0.001])
+                        else:
+                            nodes_pos[i] = node_pos + np.array([0.001, 0.001])
+
+                    elif node_location == 'north':
+                        node_pos = parent_position + np.array([radius, 0])
+                        if i % 2 == 1:
+                            nodes_pos[i] = node_pos + np.array([-0.001, -0.001])
+                        else:
+                            nodes_pos[i] = node_pos + np.array([0.001, 0.001])
+
+                    elif node_location == 'west':
+                        node_pos = parent_position + np.array([0, -radius])
+                        if i % 2 == 1:
+                            nodes_pos[i] = node_pos + np.array([-0.001, -0.001])
+                        else:
+                            nodes_pos[i] = node_pos + np.array([0.001, 0.001])
+
+                    else:
+                        print('location label not found')
+
+                npos.update(zip(nodes, nodes_pos))
+                radius = radius / 1.8  # reduce radius for next shell to prevent overlapping of edges
+
+        return npos
+
+    def draw(self,ax):
+        """
+        Draws the Graph on the axis provided
+        :param ax: matplotlib.pyplot.axis object, axis on which the graph should be drawn
+        :return: None
+        """
+        pass
+
+
+
+
 if __name__ == "__main__":
     H = HaldaneCayleyTree(4,1)
+    Q = QWZCayleyTree(3)
 
     fig, ax_list = plt.subplots(2,1)
     fig.figsize = (15,10)

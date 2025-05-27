@@ -297,7 +297,7 @@ class IsotropicAbstractTree(AbstractTree):
 class AnisotropicAbstractTree(AbstractTree):
 
     def to_numpy_complex(self):
-        """Turns a Graph G into a np.complex128 adjacency matrix, drawing edge weights from graph data.
+        """Turns the Graph G into a np.complex128 adjacency matrix, drawing edge weights from graph data.
          Allows for complex edge weights."""
         N_size = len(self.G.nodes())
         E = np.zeros(shape=(N_size, N_size), dtype=np.complex128)
@@ -310,5 +310,5 @@ class AnisotropicAbstractTree(AbstractTree):
         raise Exception("Anisotropic Trees can not be block-diagonalized using Mahans approach.")
 
     @abstractmethod
-    def draw(self):
+    def draw(self,ax):
         pass
