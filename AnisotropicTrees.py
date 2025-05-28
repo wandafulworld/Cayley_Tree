@@ -1,15 +1,12 @@
-from abc import abstractmethod
-
-from PIL.ImageOps import scale
+"""
+Cayley tree inspired models that are anisotropic, i.e. edges are directed.
+This breaks the permutation symmetry of the tree and therefore does not permit using Mahans approach.
+"""
 
 from AbstractTree import AnisotropicAbstractTree
 import numpy as np
-import scipy as sp
 import networkx as nx
 import matplotlib.pyplot as plt
-import math
-import logging
-import itertools
 import QWZ_HelperFunctions as hf
 
 class HaldaneCayleyTree(AnisotropicAbstractTree):

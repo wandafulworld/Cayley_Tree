@@ -286,7 +286,7 @@ class IsotropicAbstractTree(AbstractTree):
 
     def draw(self,ax):
         """
-        :param ax: The axis on which you want to plot your cayley tree
+        :param ax: The axis on which you want to plot your tree
         :return: None
         """
         nlist = self.shell_list()

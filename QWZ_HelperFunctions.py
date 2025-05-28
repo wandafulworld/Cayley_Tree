@@ -6,7 +6,6 @@ node to carry its relative location as an attribute.
 
 """
 
-import numpy as np
 import networkx as nx
 from typing import List, Dict
 

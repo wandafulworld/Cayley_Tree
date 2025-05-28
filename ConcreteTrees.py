@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from AbstractTree import IsotropicAbstractTree
 import numpy as np
 import scipy as sp
@@ -108,14 +107,13 @@ class CayleyTree(IsotropicAbstractTree):
 
         return eigenvals
 
-    def eff_hamiltonian_constructor(self,d,r):
+    def eff_hamiltonian_constructor(self,d):
         """
         Constructs a one-dimensional Hamiltonian with the off-diagonal elements being sqrt(r)
         :param d: int, Dimension of the H Matrix
-        :param r: int, number of childs per node
         :return: h: (d+1,d+1)-dim np-array, matrix of a 1-D chain hamiltonian of dimension d
         """
-        h = np.eye(N=d, k=1) * np.sqrt(r) + np.eye(N=d, k=-1) * np.sqrt(r)
+        h = np.eye(N=d, k=1) * np.sqrt(self.k) + np.eye(N=d, k=-1) * np.sqrt(self.k)
         return h
 
     def _eff_hamiltonian_list(self):
@@ -124,7 +122,7 @@ class CayleyTree(IsotropicAbstractTree):
         degeneracies = []
 
         # symmetric psi_0 != 0
-        h = self.eff_hamiltonian_constructor(self.M+1, self.k)
+        h = self.eff_hamiltonian_constructor(self.M+1)
         h[0][1] = np.sqrt(self.k+1)
         h[1][0] = np.sqrt(self.k+1)
         Hs.append(h)
@@ -133,12 +131,12 @@ class CayleyTree(IsotropicAbstractTree):
         # symmetric psi_0 = 0
         # Consists of (M-1) states per branch r and an additional state 0. No transitions between the
         # different matrix blocks
-        Hs.append(self.eff_hamiltonian_constructor((self.M), self.k))
+        Hs.append(self.eff_hamiltonian_constructor(self.M))
         degeneracies.append(self.k+1) # degeneracy of k + 1
 
-        #antisymmetric states with degeneracy of each state in shell l being (r+1)*r^(l-1) degenerate
+        #antisymmetric states with degeneracy of each state in shell l being (K+1)*K^(l-1) degenerate
         for l in range(2,self.M + 1):
-            Hs.append(self.eff_hamiltonian_constructor(self.M + 1 -l, self.k))
+            Hs.append(self.eff_hamiltonian_constructor(self.M + 1 -l))
             degeneracies.append((self.k+1)*self.k**(l-2))
 
 
@@ -197,7 +195,7 @@ class CayleyTree(IsotropicAbstractTree):
             asymmetric_states.append(self._linear_combination_vector(self.N,nodes,nth_roots))
 
         if return_eigenstates:
-            eigenvalue, eigenvectors = sp.linalg.eig(self.eff_hamiltonian_constructor(number_of_shells, self.k))
+            eigenvalue, eigenvectors = sp.linalg.eig(self.eff_hamiltonian_constructor(number_of_shells))
             mat = np.stack(asymmetric_states,axis=1)
             eigenstates = []
             for state in eigenvectors:
@@ -599,10 +597,6 @@ class HusimiCayley(IsotropicAbstractTree):
         else:
             h = np.eye(self.M+1-l,k=0)*(self.k-1) + np.eye(self.M+1-l,k=1)*np.sqrt(self.k)*J + np.eye(self.M+1-l,k=-1)*np.sqrt(self.k)*J
             h[0][0] = -1
-
-        # print('Shape of H: ',np.shape(h))
-        # print(l,',h:',h)
-        # print('-----------------------------------------------------------')
         return h
 
     def _eff_hamiltonian_list(self,J = None):
@@ -625,7 +619,6 @@ class HusimiCayley(IsotropicAbstractTree):
         for l in range(2,self.M+1):
             Hs.append(self._eff_hamiltonian_constructor(l,J))
             degeneracies.append((self.k -1)*(self.k + 1)*self.k**(l-1))
-        # print('degen:',degeneracies)
         return Hs, degeneracies
 
 
@@ -689,7 +682,6 @@ class LiebHusimi(IsotropicAbstractTree):
                             yield cayley_node,target
                         except StopIteration:
                             break
-                    #print('Triangle:', triangle)
                     for connection in itertools.combinations(triangle, 2):
                         yield connection[0], connection[1]
                 cayley_shell = []
@@ -732,7 +724,6 @@ class LiebHusimi(IsotropicAbstractTree):
 
         b = [self.k-1,0]
         diag = np.tile(b,reps=int(np.ceil(self.M/2)))
-        # print('Length Offdiagonal:', len(offdiag))
 
         if l == 0:
             diag[0] = self.k
@@ -743,9 +734,6 @@ class LiebHusimi(IsotropicAbstractTree):
             diag[0] = -1
             h = np.diag(diag[0:self.M-l]) + np.diag(offdiag[0:self.M-1-l],k=1) + np.diag(offdiag[0:self.M-1-l],k=-1) #The M automatically cuts off the last element of the offdiagonal if M is odd
 
-        # print('Shape of H: ',np.shape(h))
-        # print(l,',h:',h,self.M%2)
-        # print('-----------------------------------------------------------')
         return h
 
     def _eff_hamiltonian_list(self,J = None):
@@ -766,7 +754,6 @@ class LiebHusimi(IsotropicAbstractTree):
         for lc in range(1,self.mc + self.M%2):
             Hs.append(self._eff_hamiltonian_constructor(2*lc,J))
             degeneracies.append((self.k -1)*(self.k + 1)*self.k**(lc-1))
-        # print('degen:',degeneracies)
         return Hs, degeneracies
 
 
