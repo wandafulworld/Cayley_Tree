@@ -3,7 +3,7 @@ Cayley tree inspired models that are isotropic, i.e. edges are undirected.
 This allows them to be solved using Mahans approach.
 
 Functions:
-1. For each model, we can construct its adjacency matrix and draw the model using the networkx package
+1. For each model, we can construct its networkx graph object and adjacency matrix and draw the model using the networkx package
 2. Each model can be evaluated for its adjacency spectrum using exact diagonalization or Mahans approach.
 
 Note that in a tight-binding (TB) model, the adjacency spectrum corresponds to the spectrum of the TB-Hamiltonian.
