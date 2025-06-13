@@ -772,7 +772,7 @@ class LiebHusimi(IsotropicAbstractTree):
 
 
 if __name__ == "__main__":
-    C1 = LiebCayley(11,2)
+    C1 = LiebCayley(9,2)
     C2 = HusimiCayley(3,2,circle=False)
     fig, ax_list = plt.subplots(2,1,sharex=True)
     fig.figsize = (15,15)
@@ -789,12 +789,13 @@ if __name__ == "__main__":
     #C2.draw(ax_list)
     # C2.draw(ax_list[0])
     # # #
-    eval2 = C1.effective_diagonalization()
-    ax_list[1].hist(eval2,bins=200)
-    ax_list[1].set_ylabel('D')
-    ax_list[1].set_xlabel('E/t')
-    ax_list[1].set_title('Effective Hamiltonian Diagonalization Spectrum')
+    # eval2 = C1.effective_diagonalization()
+    # ax_list[1].hist(eval2,bins=200)
+    # ax_list[1].set_ylabel('D')
+    # ax_list[1].set_xlabel('E/t')
+    # ax_list[1].set_title('Effective Hamiltonian Diagonalization Spectrum')
 
+    C1.plot_spectrum(ax_list[1])
     # eval, evec = C1.exact_diagonalization()
     # ax_list[1].hist(eval,bins=100)
     # ax_list[1].set_ylabel('D')

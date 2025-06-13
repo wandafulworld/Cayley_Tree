@@ -75,6 +75,9 @@ class AbstractTree(ABC):
             else:
                 return sp.linalg.eig(A)
 
+    @abstractmethod
+    def mahan_diagonalization(self):
+        pass
 
     def _color_list(self,nlists):
         """Returns a list of color gradients (0,1) where the list positions correspond to node position given through the nlists.
@@ -145,7 +148,7 @@ class AbstractTree(ABC):
 
         return vector
 
-    def shell_layout(self,G, nlist=None, scale=1, center=None, dim=2):
+    def shell_layout(self,G, nlist=None, scale=1, center=None, dim=2): #ToDo: Have draw from self
         """Position nodes in concentric circles.
 
         Parameters
@@ -228,7 +231,7 @@ class AbstractTree(ABC):
 
         return npos
 
-    def nth_root_of_unity(n, k, precise=False):
+    def nth_root_of_unity(self,n, k, precise=False):
         """
         Returns the k-root of the nth-root of unity
         :param n: Determines the root degree of unity
@@ -240,6 +243,38 @@ class AbstractTree(ABC):
             return np.exp((2 * k * np.pi * 1j) / n)
         else:
             return np.round(np.exp((2 * k * np.pi * 1j) / n), 5)
+
+    def plot_spectrum(self,ax,nbins=None,on_site_noise=None,bond_noise=None):
+        """
+        Convenience method to plot the spectrum of the tree directly on the given axis.
+        Will use Mahan diagonalization if possible.
+        :param ax: The pyplot axis on which to plot the spectrum
+        :param nbins: int, Number of bins to use for the histogram, default is scaling with size of energy bands
+        :param on_site_noise: float, Default is None. Should be a order of magnitude, gives max size of noise applied to diagonal of Hamiltonian
+        :param bond_noise: float, Default is None. Gives max size of noise applied to the non-diagonal element of the Hamiltonian (hopping bonds)
+        :return: None
+        """
+
+        if not nbins:
+            nbins = int(np.sqrt(4 * self.k) * 100)
+
+        if isinstance(self,IsotropicAbstractTree) and not on_site_noise and not bond_noise:
+            eval, weights = self.mahan_diagonalization()
+
+            ax.hist(eval, bins=nbins, weights=weights)
+            ax.set_ylabel('D')
+            ax.set_xlabel('E/t')
+
+            ax.minorticks_on()
+            if self.M > 50: # Spectrum grows exponentially with K^M
+                ax.semilogy()
+        else:
+            print('Using exact diagonalization. For large trees this may take a while.')
+            eval = self.exact_diagonalization(eigvals_only=True,on_site_noise=on_site_noise,bond_noise=bond_noise)
+            ax.hist(eval, bins=nbins)
+            ax.set_ylabel('D')
+            ax.set_xlabel('E/t')
+            ax.minorticks_on()
 
 
 class IsotropicAbstractTree(AbstractTree):
@@ -268,16 +303,9 @@ class IsotropicAbstractTree(AbstractTree):
             eval = sp.linalg.eigh(h,eigvals_only=True)
             eval = np.round(eval,5)
             # print(eval)
-            if not self.save_ram:
-                eigenval.extend(np.repeat(eval,degeneracies[i]).tolist())
-            else:
-                eigenval.extend(eval)
-                weights.extend(np.repeat(degeneracies[i], len(eval)).tolist())
-
-        if not self.save_ram:
-            return eigenval
-        else:
-            return eigenval, weights
+            eigenval.extend(eval)
+            weights.extend(np.repeat(degeneracies[i], len(eval)).tolist())
+        return eigenval, weights
 
     def effective_diagonalization(self):
         """ For backward compatibility """
