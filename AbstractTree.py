@@ -289,12 +289,13 @@ class IsotropicAbstractTree(AbstractTree):
         G.add_edges_from(_tree_edges(n, r,**kwargs))
         return G
 
-    def mahan_diagonalization(self):
+    def mahan_diagonalization(self,return_weights=True):
         """
         Using Mahans approach, diagonalizes the effective Hamiltonians which define the dynamics of the symmetry sectors.
         Returns a list of eigenvalues and a list of weights assosciated with each of these eigenvalues.
-        :return: eigenval: The eigenvalues of you tree determined form the effective hamiltonians. Rounded to 10^{-5}
-        :return: weights: the weight of each eigenvalue determined from the degeneracy of the associated hamiltonian
+        :param: return_weights: Boolean, If False, does not return the weights associated with each eigenvalue. (The degeneracy of that eiganvalue). Default is True.
+        :return: eigenval: List of floats, The eigenvalues of you tree determined form the effective hamiltonians. Rounded to 10^{-5}
+        :return: weights: List of Ints, the weight of each eigenvalue determined from the degeneracy of the associated hamiltonian
         """
         hs, degeneracies = self._eff_hamiltonian_list()
         eigenval = []
@@ -305,7 +306,10 @@ class IsotropicAbstractTree(AbstractTree):
             # print(eval)
             eigenval.extend(eval)
             weights.extend(np.repeat(degeneracies[i], len(eval)).tolist())
-        return eigenval, weights
+        if return_weights:
+            return eigenval, weights
+        else:
+            return eigenval
 
     def effective_diagonalization(self):
         """ For backward compatibility """
