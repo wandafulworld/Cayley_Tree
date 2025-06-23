@@ -27,8 +27,11 @@ logger = logging.getLogger(__name__)
 class CayleyTree(IsotropicAbstractTree):
     def __init__(self,k,M,force_graph_object_creation=False):
         """
-        :param k: Number of children per node (k = r + 1)
-        :param M: Number of shells of the Cayley Tree
+        A simple Cayley tree with M shells and k children per node. If N > 4000, the graph object will not be instantiated and certain
+        methods will not be available. To change this, you need to set force_graph_object_creation to true.
+        :param k: int, Number of children per node
+        :param M: int, Number of shells of the Cayley Tree
+        :param force_graph_object_creation: bool, if True the object will instantiate a graph-object even if there are more than 4000 nodes.
         """
         self.k = k
         self.M = M
@@ -225,7 +228,8 @@ class LiebCayley(IsotropicAbstractTree):
         """
         Constructs a Lieb-Cayley tree. This is a Cayley tree with an additional node placed in the middle of each
         edge of the tree. This model has been shown to host in-gap states of topological origin. Note that the behavior
-        differs depending on whether M is chosen to be odd or even.
+        differs depending on whether M is chosen to be odd or even. If N > 4000, the graph object will not be instantiated and certain
+        methods will not be available. To change this, you need to set force_graph_object_creation to true.
         :param M: int, the number of shells of your tree.
         :param k: int, number of children per node
         :param save_ram:
@@ -493,6 +497,15 @@ class DoubleLiebCayley(IsotropicAbstractTree):
 
 class HusimiCayley(IsotropicAbstractTree):
     def __init__(self,M,k,force_graph_object_creation=False,circle=False):
+        """
+        A Husimi-Cayley tree with M shells and k children per node. A Husimi tree looks like a Cayley tree but the children  If N > 4000, the graph object will not be instantiated and certain
+        of each node are fully connected. This imposes loops on the tree and at k=2 leads to a tree that tiles triangles.
+        methods will not be available. To change this, you need to set force_graph_object_creation to true.
+        :param M: int, number of shells
+        :param k: int, number of children per node
+        :param force_graph_object_creation: bool, If true, forces graph-object creation even if tree has more than 4000 nodes.
+        :param circle: bool, if true places a circle at the center instead of a single node.
+        """
         self.M = M
         self.k = k # Connectivity (Degree of each node = k + 1)
         if not circle:

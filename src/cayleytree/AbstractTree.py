@@ -1,3 +1,11 @@
+"""
+Abstract Tree classes
+We are essentially employing the "template method" design pattern.
+The abstract tree and it's two subclasses implement a variety of template methods,
+which are then specified by the trees in the "IsotropicTrees" and "AnisotropicTrees" codes.
+
+"""
+
 from abc import ABC,abstractmethod
 from logging import raiseExceptions
 
