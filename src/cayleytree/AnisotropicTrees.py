@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import QWZ_HelperFunctions as hf
 
 class HaldaneCayleyTree(AnisotropicAbstractTree):
-    def __init__(self,M,t2=1,save_ram=False):
+    def __init__(self,M,t2=1,force_graph_object_creation=False):
         """
         :param k: int, Number of children per node (k = r + 1)
         :param M: int, Number of shells of the Cayley Tree, must be larger than 1 due to construction algorithm
@@ -25,10 +25,11 @@ class HaldaneCayleyTree(AnisotropicAbstractTree):
         self.k = 2
         self.M = M
         self.N = 1 + (self.k+1)*(2**M -1) # Number of nodes on the Haldane-cayley tree (== N Cayley Tree)
-        self.save_ram = save_ram
         self.t2 = t2
 
-        if not save_ram:
+        self.forced_graph = force_graph_object_creation
+
+        if self.N < 4000 or force_graph_object_creation:
             self.G = nx.empty_graph(self.N, nx.DiGraph)
             self.G.add_edges_from(HaldaneCayleyTree._tree_edges(self.N, self.k)) # networkx graph object
 
@@ -161,26 +162,27 @@ class HaldaneCayleyTree(AnisotropicAbstractTree):
 
 
 class QWZCayleyTree(AnisotropicAbstractTree):
-    def __init__(self,M,t_sigma=1,scale=0.5,m=1,save_ram=False):
+    def __init__(self,M,t_sigma=1,scale=0.5,m=1,force_graph_object_creation=False):
         """
         :param M: Number of shells of the QWZ-Cayley Tree, must be larger than 1 due to construction algorithm
         :param t_sigma: Scaling of the off-diagonal hopping (mixing)
         :param scale: Scaling of all hopping matrices (usually 0.5 for QWZ)
         :param m: mass term
-        :param save_ram: If true, initializes tree with parameters only, no adjacency matrix / graph object
+        :param force_graph_object_creation: If true, forces graph-object creation even if tree has more than 4000 nodes
         """
         if M < 1:
             raise ValueError("M has to be at least 1")
         self.k = 3 # Degree = k + 1
         self.M = M
         self.N = int(2*(1 + (self.k+1)*(self.k**M -1)/(self.k-1))) # Number of nodes on the QWZ-cayley tree (== 2xN Cayley Tree)
-        self.save_ram = save_ram
 
         self.t_sigma = t_sigma
         self.scale = scale
         self.m = m
 
-        if not save_ram:
+        self.forced_graph = force_graph_object_creation
+
+        if self.N < 4000 or force_graph_object_creation:
             self.G = nx.empty_graph(self.N, nx.DiGraph)
             hf.qwz_inner_ring(self.G,[0,1],[2,3,4,5,6,7,8,9],t_sigma=self.t_sigma,scale=self.scale) # networkx graph object
             if M > 1:

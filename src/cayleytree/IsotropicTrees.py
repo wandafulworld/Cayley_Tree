@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class CayleyTree(IsotropicAbstractTree):
-    def __init__(self,k,M,save_ram=False):
+    def __init__(self,k,M,force_graph_object_creation=False):
         """
         :param k: Number of children per node (k = r + 1)
         :param M: Number of shells of the Cayley Tree
@@ -33,9 +33,9 @@ class CayleyTree(IsotropicAbstractTree):
         self.k = k
         self.M = M
         self.N = int(1 + (k+1)*(self.k**M -1)/(self.k-1)) # Number of nodes on the cayley tree
-        self.save_ram = save_ram
+        self.forced_graph = force_graph_object_creation
 
-        if not save_ram:
+        if self.N < 4000 or force_graph_object_creation:
             self.G = IsotropicAbstractTree._tree_creator(self.N,self.k,CayleyTree._tree_edges) # networkx graph object
             self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
@@ -221,15 +221,24 @@ class CayleyTree(IsotropicAbstractTree):
 
 
 class LiebCayley(IsotropicAbstractTree):
-    def __init__(self,M,k,save_ram=False):
+    def __init__(self,M,k,force_graph_object_creation=False):
+        """
+        Constructs a Lieb-Cayley tree. This is a Cayley tree with an additional node placed in the middle of each
+        edge of the tree. This model has been shown to host in-gap states of topological origin. Note that the behavior
+        differs depending on whether M is chosen to be odd or even.
+        :param M: int, the number of shells of your tree.
+        :param k: int, number of children per node
+        :param save_ram:
+        """
         self.M = M
         self.mc = math.floor(M/2) # Number of Cayley Shells
         self.ml = math.ceil(M/2) # Number of Lieb Shells
         self.k = k # Connectivity (Degree of each node = k + 1)
-        self.save_ram = save_ram
+        self.forced_graph = force_graph_object_creation
         logger.info('Initiating LiebCayley Tree')
         self.N = int(1 + ((k + 1)/(k-1))*(k**self.mc + k**self.ml -2)) # Number of Nodes
-        if not save_ram:
+
+        if self.N < 4000 or force_graph_object_creation:
             self.G = IsotropicAbstractTree._tree_creator(self.N,self.k,LiebCayley._tree_edges) # networkx graph object
             self._A = nx.adjacency_matrix(self.G,weight='weight') # Sparse Matrix
 
@@ -346,20 +355,20 @@ class LiebCayley(IsotropicAbstractTree):
 
 
 class DoubleLiebCayley(IsotropicAbstractTree):
-    def __init__(self,M,k,J1=1,J2=1,J3=1,save_ram=False):
+    def __init__(self,M,k,J1=1,J2=1,J3=1,force_graph_object_creation=False):
         self.M = M
         self.mc = math.floor(M/3) # Number of Cayley Shells
         self.ml1 = math.floor(M/3) + math.ceil(M%3 /2) # Number of Lieb-1 Shells
         self.ml2 = math.floor(M/3) + math.floor(M%3 /2)
         self.k = k # Connectivity (Degree of each node = k + 1)
-        self.save_ram = save_ram
+        self.forced_graph = force_graph_object_creation
 
         self.J1 = J1
         self.J2 = J2
         self.J3 = J3
 
         self.N = int(1 + ((k + 1)/(k-1))*(k**self.mc + k**self.ml1 + k**self.ml2 -3)) # Number of Nodes
-        if not save_ram:
+        if self.N < 4000 or force_graph_object_creation:
             self.G = IsotropicAbstractTree._tree_creator(self.N,self.k,DoubleLiebCayley._tree_edges,J1=J1,J2=J2,J3=J3) # networkx graph object
             self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
@@ -483,18 +492,18 @@ class DoubleLiebCayley(IsotropicAbstractTree):
 
 
 class HusimiCayley(IsotropicAbstractTree):
-    def __init__(self,M,k,save_ram=False,circle=False):
+    def __init__(self,M,k,force_graph_object_creation=False,circle=False):
         self.M = M
         self.k = k # Connectivity (Degree of each node = k + 1)
         if not circle:
             self.N = int(1 + k*(k + 1) * (k ** M - 1) /(k-1))
         if circle:
             self.N = int((k + 1) * (k ** M - 1) / (k - 1))
-
-        self.save_ram = save_ram
         self.circle = circle
 
-        if not save_ram:
+        self.forced_graph = force_graph_object_creation
+
+        if self.N < 4000 or force_graph_object_creation:
             self.G = IsotropicAbstractTree._tree_creator(self.N,self.k,HusimiCayley._tree_edges,circle=circle) # networkx graph object
             self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
@@ -635,15 +644,17 @@ class HusimiCayley(IsotropicAbstractTree):
 
 
 class LiebHusimi(IsotropicAbstractTree):
-    def __init__(self,M,k,save_ram=False):
+    def __init__(self,M,k,force_graph_object_creation=False):
         self.M = M
         self.mc = math.floor(M/2) # Number of Cayley Shells
         self.ml = math.ceil(M/2) # Number of Lieb Shells
         self.k = k # Connectivity (Degree of each node = k + 1)
-        self.save_ram = save_ram
         logger.info('Initiating LiebHusimi Tree')
         self.N = int(((k + 1)/(k-1))*(k**self.mc + k**self.ml -2)) # Number of Nodes
-        if not save_ram:
+
+        self.forced_graph = force_graph_object_creation
+
+        if self.N < 4000 or force_graph_object_creation:
             self.G = IsotropicAbstractTree._tree_creator(self.N,self.k,LiebHusimi._tree_edges) # networkx graph object
             self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
