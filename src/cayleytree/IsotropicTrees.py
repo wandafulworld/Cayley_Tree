@@ -25,12 +25,12 @@ logger = logging.getLogger(__name__)
 
 
 class CayleyTree(IsotropicAbstractTree):
-    def __init__(self,k,M,force_graph_object_creation=False):
+    def __init__(self,M,k,force_graph_object_creation=False):
         """
         A simple Cayley tree with M shells and k children per node. If N > 4000, the graph object will not be instantiated and certain
         methods will not be available. To change this, you need to set force_graph_object_creation to true.
-        :param k: int, Number of children per node
         :param M: int, Number of shells of the Cayley Tree
+        :param k: int, Number of children per node
         :param force_graph_object_creation: bool, if True the object will instantiate a graph-object even if there are more than 4000 nodes.
         """
         self.k = k
