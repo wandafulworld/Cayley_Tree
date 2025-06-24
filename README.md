@@ -6,7 +6,7 @@
 <br />
 <div align="center">
   <a href="https://https://github.com/wandafulworld/Cayley_Tree">
-    <img src="images/logo.png" alt="Logo" width="150" height="150">
+    <img src="images/Logo.png" alt="Logo" width="150" height="150">
   </a>
 
   <h3 align="center">cayleytree</h3>
@@ -14,7 +14,7 @@
   <p align="center">
     A package to create and solve large Cayley trees!
     <br />
-    <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a>
+    <a href="https://colab.research.google.com/drive/16is4S9AJZi57FSxWziclexCK9Q-LG-9S?usp=sharing">View Demo</a>
   </p>
 </div>
 
