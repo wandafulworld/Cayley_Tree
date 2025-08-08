@@ -8,8 +8,10 @@ Functions:
 
 Note that in a tight-binding (TB) model, the adjacency spectrum corresponds to the spectrum of the TB-Hamiltonian.
 """
+from logging import raiseExceptions
 
 from AbstractTree import IsotropicAbstractTree
+from AbstractTree import AbstractTree
 import numpy as np
 import scipy as sp
 import networkx as nx
@@ -25,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class CayleyTree(IsotropicAbstractTree):
-    def __init__(self,M,k,force_graph_object_creation=False):
+    def __init__(self,M,k,force_graph_object_creation=False, next_nearest_neighbors=False):
         """
         A simple Cayley tree with M shells and k children per node. If N > 4000, the graph object will not be instantiated and certain
         methods will not be available. To change this, you need to set force_graph_object_creation to true.
@@ -37,9 +39,31 @@ class CayleyTree(IsotropicAbstractTree):
         self.M = M
         self.N = int(1 + (k+1)*(self.k**M -1)/(self.k-1)) # Number of nodes on the cayley tree
         self.forced_graph = force_graph_object_creation
+        self.next_nearest_neighbors = next_nearest_neighbors
+        self.t2 = 1 # for later tuning of parameters
 
         if self.N < 4000 or force_graph_object_creation:
             self.G = IsotropicAbstractTree._tree_creator(self.N,self.k,CayleyTree._tree_edges) # networkx graph object
+
+            if next_nearest_neighbors:
+                # Now we construct the next-nearest neighbour hopping
+                # First construct the lower-shell nn hoping
+                for node in self.G.nodes:
+                    nextnearestneighbours = AbstractTree.sub_nnneighbours(self.G, node)
+                    for nnnode in nextnearestneighbours:
+                        self.G.add_edge(node, nnnode, weight=self.t2)
+
+                for node in self.G.nodes:
+                    if node % k == 0 and node > k+1:
+                        for combination in itertools.combinations(range(node, node+k), 2):
+                            self.G.add_edge(combination[0], combination[1], weight=self.t2)
+                    else:
+                        continue
+
+                # Manual add the inner circle
+                for combination in itertools.combinations(range(1,k+2),2):
+                    self.G.add_edge(combination[0], combination[1], weight=self.t2)
+
             self._A = nx.adjacency_matrix(self.G) # Sparse Matrix
 
     @staticmethod
@@ -127,8 +151,12 @@ class CayleyTree(IsotropicAbstractTree):
         :param d: int, Dimension of the H Matrix
         :return: h: (d+1,d+1)-dim np-array, matrix of a 1-D chain hamiltonian of dimension d
         """
-        h = np.eye(N=d, k=1) * np.sqrt(self.k) + np.eye(N=d, k=-1) * np.sqrt(self.k)
-        return h
+        if not self.next_nearest_neighbors:
+            h = np.eye(N=d, k=1) * np.sqrt(self.k) + np.eye(N=d, k=-1) * np.sqrt(self.k)
+            return h
+        else:
+            raise Exception('Mahan Diagonalization for NNN-Hopping not implemented yet')
+
 
     def _eff_hamiltonian_list(self):
 
@@ -796,7 +824,7 @@ class LiebHusimi(IsotropicAbstractTree):
 
 
 if __name__ == "__main__":
-    C1 = LiebCayley(9,2)
+    C1 = CayleyTree(5,2,next_nearest_neighbors=True)
     C2 = HusimiCayley(3,2,circle=False)
     fig, ax_list = plt.subplots(2,1,sharex=True)
     fig.figsize = (15,15)
@@ -804,7 +832,7 @@ if __name__ == "__main__":
     print(C2.G.edges)
 
     print(C1.N)
-    eval, evec = C1.exact_diagonalization(bond_noise=0.2)
+    eval, evec = C1.exact_diagonalization()
     ax_list[0].hist(eval,bins=200)
     ax_list[0].set_ylabel('D')
     ax_list[0].set_xlabel('E/t')
@@ -818,6 +846,8 @@ if __name__ == "__main__":
     # ax_list[1].set_ylabel('D')
     # ax_list[1].set_xlabel('E/t')
     # ax_list[1].set_title('Effective Hamiltonian Diagonalization Spectrum')
+
+    #C1.draw(ax_list[1])
 
     C1.plot_spectrum(ax_list[1])
     # eval, evec = C1.exact_diagonalization()
