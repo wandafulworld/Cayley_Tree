@@ -14,6 +14,8 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import QWZ_HelperFunctions as hf
+from src.cayleytree.AbstractTree import AbstractTree
+
 
 class HaldaneCayleyTree(AnisotropicAbstractTree):
     def __init__(self,M,t2=1,force_graph_object_creation=False):
@@ -36,7 +38,7 @@ class HaldaneCayleyTree(AnisotropicAbstractTree):
             # Now we construct the next-nearest neighbour hopping
             # First construct the lower-shell nn hoping
             for node in self.G.nodes:
-                nextnearestneighbours = HaldaneCayleyTree.sub_nnneighbours(self.G,node)
+                nextnearestneighbours = AbstractTree.sub_nnneighbours(self.G,node)
                 for nnnode in nextnearestneighbours:
                     if nnnode %2 == 0:
                         self.G.add_edge(node,nnnode,weight=-1j * self.t2)
@@ -88,30 +90,6 @@ class HaldaneCayleyTree(AnisotropicAbstractTree):
             if first_time:
                 r = r - 1
             first_time = False
-
-    @staticmethod
-    def sub_nnneighbours(G, chosen_node, flatten=False):
-        """
-        For a chosen node, this returns all the nodes that follow in the tree (called subnodes)
-        which are next-nearest neighbours to the chosen nodes.
-        :param G: networkx.graph, The graph object
-        :param chosen_node: int, The node of which you want to find the subtree
-        :param flatten: Boolean, If true the returned array will not be flat instead of grouped according to
-                                parent node
-        :return: A list of all nodes that form the subtree.
-        """
-        node_list = []
-        work_list = [n for n in G.neighbors(chosen_node) if
-                     n > chosen_node]  # all nearest neighbours to node n in lower shell
-        while work_list != []:
-            nnumber = work_list.pop(0)
-            subnodes = [n for n in G.neighbors(nnumber) if n > nnumber]
-            node_list.extend(subnodes)
-
-        if flatten:
-            node_list = [item for row in node_list for item in row]
-
-        return node_list
 
     @property
     def A(self):

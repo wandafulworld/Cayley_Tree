@@ -134,6 +134,30 @@ class AbstractTree(ABC):
 
         return node_list
 
+    @staticmethod
+    def sub_nnneighbours(G, chosen_node, flatten=False):
+        """
+        For a chosen node, this returns all the nodes that follow in the tree (called subnodes)
+        which are next-nearest neighbours to the chosen nodes.
+        :param G: networkx.graph, The graph object
+        :param chosen_node: int, The node of which you want to find the subtree
+        :param flatten: Boolean, If true the returned array will not be flat instead of grouped according to
+                                parent node
+        :return: A list of all nodes that form the subtree.
+        """
+        node_list = []
+        work_list = [n for n in G.neighbors(chosen_node) if
+                     n > chosen_node]  # all nearest neighbours to node n in lower shell
+        while work_list != []:
+            nnumber = work_list.pop(0)
+            subnodes = [n for n in G.neighbors(nnumber) if n > nnumber]
+            node_list.extend(subnodes)
+
+        if flatten:
+            node_list = [item for row in node_list for item in row]
+
+        return node_list
+
     def _linear_combination_vector(self,nodes, prefactors, normalize=False):
         """
         Returns a numpy array that is a linear combination of the nodes provided via "nodes" in position basis
