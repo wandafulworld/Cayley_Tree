@@ -1,6 +1,6 @@
 """
 Cayley tree inspired models that are isotropic, i.e. edges are undirected.
-This allows them to be solved using Mahans approach.
+This allows them to be solved using Mahan's approach.
 
 Functions:
 1. For each model, we can construct its networkx graph object and adjacency matrix and draw the model using the networkx package
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class CayleyTree(IsotropicAbstractTree):
-    def __init__(self,M,k,force_graph_object_creation=False, next_nearest_neighbors=False):
+    def __init__(self,M,k,force_graph_object_creation=False, next_nearest_neighbors=False, t2=1):
         """
         A simple Cayley tree with M shells and k children per node. If N > 4000, the graph object will not be instantiated and certain
         methods will not be available. To change this, you need to set force_graph_object_creation to true.
@@ -40,7 +40,9 @@ class CayleyTree(IsotropicAbstractTree):
         self.N = int(1 + (k+1)*(self.k**M -1)/(self.k-1)) # Number of nodes on the cayley tree
         self.forced_graph = force_graph_object_creation
         self.next_nearest_neighbors = next_nearest_neighbors
-        self.t2 = 1 # for later tuning of parameters
+        self.t2 = t2 # for tuning of NNN-hopping
+
+        print(self.N)
 
         if self.N < 4000 or force_graph_object_creation:
             self.G = IsotropicAbstractTree._tree_creator(self.N,self.k,CayleyTree._tree_edges) # networkx graph object
@@ -54,7 +56,7 @@ class CayleyTree(IsotropicAbstractTree):
                         self.G.add_edge(node, nnnode, weight=self.t2)
 
                 for node in self.G.nodes:
-                    if node % k == 0 and node > k+1:
+                    if (node + (k-2)) % k == 0 and node > k+1:
                         for combination in itertools.combinations(range(node, node+k), 2):
                             self.G.add_edge(combination[0], combination[1], weight=self.t2)
                     else:
@@ -145,17 +147,33 @@ class CayleyTree(IsotropicAbstractTree):
 
         return eigenvals
 
-    def eff_hamiltonian_constructor(self,d):
+    def eff_hamiltonian_constructor(self,d,l=None):
         """
         Constructs a one-dimensional Hamiltonian with the off-diagonal elements being sqrt(r)
         :param d: int, Dimension of the H Matrix
         :return: h: (d+1,d+1)-dim np-array, matrix of a 1-D chain hamiltonian of dimension d
         """
-        if not self.next_nearest_neighbors:
-            h = np.eye(N=d, k=1) * np.sqrt(self.k) + np.eye(N=d, k=-1) * np.sqrt(self.k)
-            return h
+
+        if self.next_nearest_neighbors:
+            if l == 0: #shell symmetric
+                h = np.eye(N=d)*(self.k-1)*self.t2 + np.eye(N=d,k=1)*np.sqrt(self.k) + np.eye(N=d,k=-1)*np.sqrt(self.k) + np.eye(N=d,k=2)*self.k*self.t2 + np.eye(N=d,k=-2)*self.k*self.t2
+                # Boundary Terms
+                h[0][0] = 0
+                h[1][1] = self.k*self.t2
+                h[1][0] = np.sqrt(self.k + 1)
+                h[0][1] = np.sqrt(self.k + 1)
+                h[2][0] = np.sqrt((self.k+1)*self.k)*self.t2
+                h[0][2] = np.sqrt((self.k + 1) * self.k)*self.t2
+
+            else: # Non-Symmetric
+                h = np.eye(N=d)*(self.k-1)*self.t2 + np.eye(N=d,k=1)*np.sqrt(self.k) + np.eye(N=d,k=-1)*np.sqrt(self.k) + np.eye(N=d,k=2)*self.k*self.t2 + np.eye(N=d,k=-2)*self.k*self.t2
+                # Boundary Terms
+                h[0][0] = -1*self.t2
+
         else:
-            raise Exception('Mahan Diagonalization for NNN-Hopping not implemented yet')
+            h = np.eye(N=d, k=1) * np.sqrt(self.k) + np.eye(N=d, k=-1) * np.sqrt(self.k)
+
+        return h
 
 
     def _eff_hamiltonian_list(self):
@@ -163,23 +181,36 @@ class CayleyTree(IsotropicAbstractTree):
         Hs = []
         degeneracies = []
 
-        # symmetric psi_0 != 0
-        h = self.eff_hamiltonian_constructor(self.M+1)
-        h[0][1] = np.sqrt(self.k+1)
-        h[1][0] = np.sqrt(self.k+1)
-        Hs.append(h)
-        degeneracies.append(1)
+        if self.next_nearest_neighbors:
+            Hs.append(self.eff_hamiltonian_constructor(self.M+1,0)) # Shell symmetric
+            degeneracies.append(1)
 
-        # symmetric psi_0 = 0
-        # Consists of (M-1) states per branch r and an additional state 0. No transitions between the
-        # different matrix blocks
-        Hs.append(self.eff_hamiltonian_constructor(self.M))
-        degeneracies.append(self.k+1) # degeneracy of k + 1
+            Hs.append(self.eff_hamiltonian_constructor(self.M,1))
+            degeneracies.append(self.k) # degeneracy of k according to kth-root degeneracy
 
-        #antisymmetric states with degeneracy of each state in shell l being (K+1)*K^(l-1) degenerate
-        for l in range(2,self.M + 1):
-            Hs.append(self.eff_hamiltonian_constructor(self.M + 1 -l))
-            degeneracies.append((self.k+1)*self.k**(l-2))
+            for l in range(2,self.M + 1):
+                Hs.append(self.eff_hamiltonian_constructor(self.M + 1 -l,l))
+                degeneracies.append((self.k-1)*(self.k+1)*self.k**(l-2))
+
+
+        else:
+            # symmetric psi_0 != 0
+            h = self.eff_hamiltonian_constructor(self.M+1)
+            h[0][1] = np.sqrt(self.k+1)
+            h[1][0] = np.sqrt(self.k+1)
+            Hs.append(h)
+            degeneracies.append(1)
+
+            # symmetric psi_0 = 0
+            # Consists of (M-1) states per branch r and an additional state 0. No transitions between the
+            # different matrix blocks
+            Hs.append(self.eff_hamiltonian_constructor(self.M))
+            degeneracies.append(self.k) # degeneracy of k
+
+            #antisymmetric states with degeneracy of each state in shell l being (K+1)*K^(l-1) degenerate
+            for l in range(2,self.M + 1):
+                Hs.append(self.eff_hamiltonian_constructor(self.M + 1 -l))
+                degeneracies.append((self.k - 1)*(self.k+1)*self.k**(l-2))
 
 
         return Hs, degeneracies
@@ -824,16 +855,15 @@ class LiebHusimi(IsotropicAbstractTree):
 
 
 if __name__ == "__main__":
-    C1 = CayleyTree(5,2,next_nearest_neighbors=True)
+    C1 = CayleyTree(4,2,next_nearest_neighbors=True,t2=0)
     C2 = HusimiCayley(3,2,circle=False)
     fig, ax_list = plt.subplots(2,1,sharex=True)
     fig.figsize = (15,15)
-    print(C2.G.nodes)
-    print(C2.G.edges)
+
 
     print(C1.N)
     eval, evec = C1.exact_diagonalization()
-    ax_list[0].hist(eval,bins=200)
+    ax_list[0].hist(eval,bins=201)
     ax_list[0].set_ylabel('D')
     ax_list[0].set_xlabel('E/t')
     ax_list[0].set_title('Exact Diagonalization Spectrum')
@@ -841,15 +871,18 @@ if __name__ == "__main__":
     #C2.draw(ax_list)
     # C2.draw(ax_list[0])
     # # #
-    # eval2 = C1.effective_diagonalization()
-    # ax_list[1].hist(eval2,bins=200)
-    # ax_list[1].set_ylabel('D')
-    # ax_list[1].set_xlabel('E/t')
-    # ax_list[1].set_title('Effective Hamiltonian Diagonalization Spectrum')
+    eval2,weights2 = C1.effective_diagonalization()
+    ax_list[1].hist(eval2,bins=201,weights=weights2)
+    ax_list[1].set_ylabel('D')
+    ax_list[1].set_xlabel('E/t')
+    #ax_list[1].semilogy()
+    ax_list[1].set_title('Effective Hamiltonian Diagonalization Spectrum')
 
+    complete_evals = np.sort(np.repeat(eval2,weights2))
+    print(np.sort(eval)-complete_evals)
     #C1.draw(ax_list[1])
 
-    C1.plot_spectrum(ax_list[1])
+    # C1.plot_spectrum(ax_list[1])
     # eval, evec = C1.exact_diagonalization()
     # ax_list[1].hist(eval,bins=100)
     # ax_list[1].set_ylabel('D')
