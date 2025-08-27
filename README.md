@@ -48,7 +48,7 @@ This package provides a flexible framework to experiment with Cayley trees and v
 in our understanding of Cayley trees. This has been developed as part of the research of [Prof. Tomáš Bzdušek](https://www.physik.uzh.ch/en/groups/bzdusek/team.html) team on the topological order of hyperbolic lattices. 
 
 Core functionalities:
-* Seven Cayley tree variations have been implemented (see below), whereof five can be solved for their adjacency spectrum to almost arbitrary sizes using what is called "Mahan's approach".
+* Seven Cayley tree variations have been implemented, whereof five can be solved for their adjacency spectrum to almost arbitrary sizes using what is called "Mahan's approach".
 * Each tree has been built on a [networkx](https://networkx.org/) graph object, allowing to experiment on it with the full power of the graph theoretical tools implemented in networkx
 * Each tree comes with out-of-the-box adjacency spectrum solvers and plotting options.
 
@@ -144,7 +144,7 @@ by setting force_graph_object_creation = True. Be aware, that large trees can ea
 <!-- LICENSE -->
 ## License
 
-Distributed under the Unlicense License. See `LICENSE.txt` for more information.
+Distributed under the CC BY-NC-SA 4.0 License. See `LICENSE` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
