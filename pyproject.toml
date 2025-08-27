@@ -1,0 +1,20 @@
+[project]
+name = "cayleytree"
+version = "0.0.1"
+authors = [
+  { name="Wanda Duss", email="wanda.duss@physik.uzh.ch" },
+]
+description = "A package to create and solve large Cayley trees"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "CC BY-NC-SA"
+license-files = ["LICEN[CS]E*"]
+keywords = ["python", "tree", "tight-binding", "networkx", "topological-insulator","cayley-graph"]
+
+[project.urls]
+Homepage = "https://github.com/wandafulworld/cayleytree"
+Issues = "https://github.com/wandafulworld/cayleytree/issues"
