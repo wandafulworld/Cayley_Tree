@@ -86,7 +86,7 @@ class CayleyTree(IsotropicAbstractTree):
                 try:
                     target = next(nodes)
                     parents.append(target)
-                    yield source, target
+                    yield source, target, {'weight': 1}
                 except StopIteration:
                     break
             if first_time:
@@ -676,20 +676,34 @@ class HusimiCayley(IsotropicAbstractTree):
         if not J and J != 0:
             J = 1
 
-        if l == 0:
-            h = np.eye(self.M+1,k=0)*(self.k-1) + np.eye(self.M+1,k=1)*np.sqrt(self.k)*J + np.eye(self.M+1,k=-1)*np.sqrt(self.k)*J
-            h[0][0] = 0
-            h[1][0] = np.sqrt(self.k*(self.k+1))*J
-            h[0][1] = np.sqrt(self.k * (self.k + 1))*J
+        if not self.circle:
+            if l == 0:
+                h = np.eye(self.M+1,k=0)*(self.k-1) + np.eye(self.M+1,k=1)*np.sqrt(self.k)*J + np.eye(self.M+1,k=-1)*np.sqrt(self.k)*J
+                h[0][0] = 0
+                h[1][0] = np.sqrt(self.k*(self.k+1))*J
+                h[0][1] = np.sqrt(self.k * (self.k + 1))*J
 
-        elif l == 1:
-            h = [np.eye(self.M+1-l,k=0)*(self.k-1) + np.eye(self.M+1-l,k=1)*np.sqrt(self.k)*J + np.eye(self.M+1-l,k=-1)*np.sqrt(self.k)*J]
-            h[0][0][0] = -1
-            h.append(np.eye(self.M+1-l,k=0)*(self.k-1) + np.eye(self.M+1-l,k=1)*np.sqrt(self.k)*J + np.eye(self.M+1-l,k=-1)*np.sqrt(self.k)*J)
-        else:
-            h = np.eye(self.M+1-l,k=0)*(self.k-1) + np.eye(self.M+1-l,k=1)*np.sqrt(self.k)*J + np.eye(self.M+1-l,k=-1)*np.sqrt(self.k)*J
-            h[0][0] = -1
-        return h
+            elif l == 1:
+                h = [np.eye(self.M+1-l,k=0)*(self.k-1) + np.eye(self.M+1-l,k=1)*np.sqrt(self.k)*J + np.eye(self.M+1-l,k=-1)*np.sqrt(self.k)*J]
+                h[0][0][0] = -1
+                h.append(np.eye(self.M+1-l,k=0)*(self.k-1) + np.eye(self.M+1-l,k=1)*np.sqrt(self.k)*J + np.eye(self.M+1-l,k=-1)*np.sqrt(self.k)*J)
+            else:
+                h = np.eye(self.M+1-l,k=0)*(self.k-1) + np.eye(self.M+1-l,k=1)*np.sqrt(self.k)*J + np.eye(self.M+1-l,k=-1)*np.sqrt(self.k)*J
+                h[0][0] = -1
+            return h
+
+        else: # Circle Center -> Slightly different Hamiltonians
+            if l == 0:
+                h = np.eye(self.M, k=0) * (self.k - 1) + np.eye(self.M, k=1) * np.sqrt(self.k) * J + np.eye(
+                    self.M, k=-1) * np.sqrt(self.k) * J
+                h[0][0] = self.k
+
+            else:
+                h = np.eye(self.M + 1 - l, k=0) * (self.k - 1) + np.eye(self.M + 1 - l, k=1) * np.sqrt(
+                    self.k) * J + np.eye(self.M + 1 - l, k=-1) * np.sqrt(self.k) * J
+                h[0][0] = -1
+            return h
+
 
     def _eff_hamiltonian_list(self,J = None):
         """
@@ -701,16 +715,22 @@ class HusimiCayley(IsotropicAbstractTree):
 
         Hs = []
         degeneracies = []
+
         # Symm States (once for l = 0 and l = 1)
         Hs.append(self._eff_hamiltonian_constructor(0,J))
         degeneracies.append(1)
-        Hs.extend(self._eff_hamiltonian_constructor(1,J))
-        degeneracies.append((self.k+1)*(self.k-1)) # k+1 because the anti-symm states can form plus/minus with themselves
-        degeneracies.append(self.k)# Additional degeneracy for anti-symm combinations of symmetric shell states
+        if not self.circle:
+            Hs.extend(self._eff_hamiltonian_constructor(1, J))
+            degeneracies.append((self.k-1)*(self.k+1)) # anti-symm states that are on one branch only but their alpha is the central node
+            degeneracies.append(self.k)# Additional degeneracy for anti-symm combinations of symmetric shell states
+        else:
+            Hs.append(self._eff_hamiltonian_constructor(1, J))
+            degeneracies.append(self.k)
         # Anti-Symm States (runs from 1 to mc with lc = 2l)
         for l in range(2,self.M+1):
             Hs.append(self._eff_hamiltonian_constructor(l,J))
-            degeneracies.append((self.k -1)*(self.k + 1)*self.k**(l-1))
+            degeneracies.append((self.k -1)*(self.k + 1)*self.k**(l-2))
+        print(Hs)
         return Hs, degeneracies
 
 
@@ -855,38 +875,22 @@ class LiebHusimi(IsotropicAbstractTree):
 
 
 if __name__ == "__main__":
-    C1 = CayleyTree(4,2,next_nearest_neighbors=True,t2=0)
-    C2 = HusimiCayley(3,2,circle=False)
+    HC = HusimiCayley(3,4,circle=True)
     fig, ax_list = plt.subplots(2,1,sharex=True)
     fig.figsize = (15,15)
 
-
-    print(C1.N)
-    eval, evec = C1.exact_diagonalization()
+    eval, evec = HC.exact_diagonalization()
     ax_list[0].hist(eval,bins=201)
     ax_list[0].set_ylabel('D')
     ax_list[0].set_xlabel('E/t')
     ax_list[0].set_title('Exact Diagonalization Spectrum')
-    # # #
-    #C2.draw(ax_list)
-    # C2.draw(ax_list[0])
-    # # #
-    eval2,weights2 = C1.effective_diagonalization()
+
+    eval2,weights2 = HC.effective_diagonalization()
     ax_list[1].hist(eval2,bins=201,weights=weights2)
     ax_list[1].set_ylabel('D')
     ax_list[1].set_xlabel('E/t')
     #ax_list[1].semilogy()
     ax_list[1].set_title('Effective Hamiltonian Diagonalization Spectrum')
 
-    complete_evals = np.sort(np.repeat(eval2,weights2))
-    print(np.sort(eval)-complete_evals)
-    #C1.draw(ax_list[1])
-
-    # C1.plot_spectrum(ax_list[1])
-    # eval, evec = C1.exact_diagonalization()
-    # ax_list[1].hist(eval,bins=100)
-    # ax_list[1].set_ylabel('D')
-    # ax_list[1].set_xlabel('E/t')
-    # ax_list[1].set_title('Exact Diagonalization Spectrum')
 
     plt.show()
